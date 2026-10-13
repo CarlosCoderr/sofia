@@ -25,4 +25,9 @@
 - [x] T012 Arnés y guion: «mientras piensa», «persona en la ventana», «agente incluido», y la espera del #116
 - [x] T013 Contrato del despacho, `AGENTS.md`, `specs/README.md`, CHANGELOG
 - [x] T014 Gate técnico y E2E en los dos modos; `pnpm test:e2e` sin la variable
-- [ ] T015 Prueba en vivo (local con túnel y Coolify) y bitácora
+- [x] T015 Prueba en vivo (local con túnel y Coolify) y bitácora
+
+## Verificación (2026-10-13)
+
+Gates, E2E en los dos modos, migración y las dos pruebas en vivo: ver
+[`docs/bitacora-2.0.md`](../../docs/bitacora-2.0.md).
