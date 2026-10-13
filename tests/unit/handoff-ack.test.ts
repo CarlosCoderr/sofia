@@ -277,3 +277,47 @@ describe("acuse del patrón de respaldo antes de traspasar (FR-022)", () => {
     expect(eventos).toEqual(["enviado:Te paso con el equipo.", "handoff:modelo"]);
   });
 });
+
+/**
+ * 022 — El canal ya no admite más mensajes hasta que el cliente escriba (el
+ * tope de TikTok). Si el agente topa con él, calla: un traspaso dejaría la IA
+ * en pausa para siempre por algo que se arregla solo con el siguiente mensaje.
+ */
+describe("el tope de mensajes del canal no traspasa (022)", () => {
+  beforeEach(() => {
+    eventos.length = 0;
+    selectQueue.length = 0;
+    inserts.length = 0;
+    updates.length = 0;
+    sendText.mockReset();
+    chatJson.mockReset();
+    chatJson.mockResolvedValue({ ok: true, data: { action: "reply", text: "Claro, con gusto" } });
+    vi.stubEnv("OPENROUTER_API_TOKEN", "token-test");
+  });
+
+  it("message_limit al enviar: no se traspasa y el turno no revienta", async () => {
+    sendText.mockRejectedValueOnce(
+      new SendError("message_limit", "TikTok solo permite 10 mensajes")
+    );
+    // conversación, perfil, historial, conocimiento, etapas
+    selectQueue.push(
+      [conversacion({ channel: "tiktok" })],
+      [perfil],
+      historial("¿siguen ahí?"),
+      [],
+      []
+    );
+    await expect(runAgentTurn("cv_1")).resolves.toBeDefined();
+
+    expect(sendText).toHaveBeenCalledTimes(1);
+    expect(eventos.filter((e) => e.startsWith("handoff:"))).toEqual([]);
+    expect(updates.some((u) => "handoffReason" in u || "handoffAt" in u)).toBe(false);
+  });
+
+  it("la ventana cerrada sí sigue traspasando, como siempre", async () => {
+    sendText.mockRejectedValueOnce(new SendError("window_closed", "cerrada"));
+    selectQueue.push([conversacion()], [perfil], historial("¿siguen ahí?"), [], []);
+    await runAgentTurn("cv_1");
+    expect(eventos).toContain("handoff:ventana");
+  });
+});

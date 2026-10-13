@@ -14,8 +14,9 @@
  *      OPENROUTER_BASE_URL → ai-mock + OPENROUTER_API_TOKEN + OPENROUTER_MODEL,
  *      BOT_API_KEY, AGENT_COALESCE_MS corta (1500) y
  *      BRAIN_DISPATCH_URL=http://127.0.0.1:<puerto libre>/vocero/dispatch.
- *      Con CHANNELS=whatsapp,instagram,messenger corre también esos canales
- *      (Instagram entra por Zernio: ZERNIO_BASE_URL → zernio-mock).
+ *      Con CHANNELS=whatsapp,instagram,messenger,tiktok corre también esos
+ *      canales (Instagram y TikTok entran por Zernio: ZERNIO_BASE_URL →
+ *      zernio-mock).
  *   2) node --env-file=.env scripts/e2e-despacho.mjs
  *
  * Dos modos, según cómo arrancó la app (025):
@@ -806,6 +807,77 @@ async function otrosCanales(cerebro) {
     "y el evento no dice por qué proveedor entró",
     Boolean(llego) && !llego.crudo.toLowerCase().includes("zernio"),
   );
+
+  await tiktok(cerebro);
+}
+
+/** 022 — TikTok entra por Zernio y se despacha como los demás, con su ventana. */
+async function tiktok(cerebro) {
+  if (!CHANNELS.includes("tiktok")) {
+    console.log("  SKIP TikTok: CHANNELS no lo incluye");
+    return;
+  }
+  console.log("\n== 022·AC8: TikTok se despacha con su canal y su ventana de 48 h ==");
+  const CUENTA = "zernio-tt-despacho";
+  const SECRETO = "secreto-del-webhook-de-zernio";
+  const sender = `tt-despacho-${RUN}`;
+  const c = await api("/api/settings/tiktok", {
+    method: "PUT",
+    body: JSON.stringify({ accountRef: CUENTA, token: "zernio-key-demo", webhookSecret: SECRETO }),
+  });
+  ok("cuenta de TikTok conectada por Zernio (zernio-mock)", c.res.ok, JSON.stringify(c.json));
+  if (!c.res.ok) return;
+  const texto = `hola por TikTok ${MARCA}`;
+  const hilo = `zconv-tt-${RUN}`;
+  const cuerpo = JSON.stringify({
+    id: `evt-tt-${RUN}`,
+    event: "message.received",
+    message: {
+      id: `zmsg-tt-${RUN}`,
+      conversationId: hilo,
+      platform: "tiktok",
+      direction: "incoming",
+      text: texto,
+      sender: { id: sender, name: `Tadeo Tok ${MARCA}`, username: "tadeo" },
+    },
+    conversation: { id: hilo },
+    account: { id: CUENTA, accountId: CUENTA, platform: "tiktok" },
+  });
+  const t0 = Date.now();
+  const wh = await fetch(`${BASE}/api/webhooks/tiktok/${VERIFY_TOKEN}`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-zernio-signature": createHmac("sha256", SECRETO).update(cuerpo).digest("hex"),
+    },
+    body: cuerpo,
+  });
+  ok("el webhook de TikTok respondió 200", wh.status === 200, String(wh.status));
+  const conv = await hasta(async () =>
+    (await conversaciones()).find((x) => x.channel === "tiktok" && x.preview?.includes(MARCA))
+  );
+  const llego = conv ? await hasta(() => cerebro.de(conv.id)[0], COALESCE + 12000) : null;
+  ok(
+    "despacho con canal tiktok e identidad tt:",
+    llego?.evento.conversation.channel === "tiktok" &&
+      llego?.evento.contact.identity === `tt:${sender}` &&
+      llego?.evento.messages[0]?.text === texto &&
+      llego?.firmaOk === true,
+    JSON.stringify({ c: llego?.evento.conversation.channel, i: llego?.evento.contact.identity })
+  );
+  const vence = Date.parse(llego?.evento.conversation.windowExpiresAt ?? "");
+  ok(
+    "windowExpiresAt cae a 48 h del mensaje, no a 24",
+    Math.abs(vence - t0 - 48 * 3600_000) < 5 * 60_000,
+    `${((vence - t0) / 3600_000).toFixed(2)} h`
+  );
+  if (llego) {
+    const r = await bot("/api/bot/messages", {
+      method: "POST",
+      body: JSON.stringify({ conversationId: conv.id, text: `claro, por TikTok ${MARCA}` }),
+    });
+    ok("el cerebro contesta por el mismo /api/bot/messages", r.res.ok, JSON.stringify(r.json));
+  }
 }
 
 // ---------------------------------------------------------------------------

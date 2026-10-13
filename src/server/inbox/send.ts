@@ -24,10 +24,24 @@ import {
   type MessengerCredentials,
 } from "@/server/messenger/credentials";
 import { sendMessengerText } from "@/server/messenger/send";
+import { TT_PREFIX } from "@/server/inbox/identity";
+import {
+  getTiktokCredentialsByOrg,
+  markTiktokReconnectRequired,
+  type TiktokCredentials,
+} from "@/server/tiktok/credentials";
+import { sendTiktokText } from "@/server/tiktok/send";
+import {
+  cabeOtroMensaje,
+  salientesDesdeElUltimoEntrante,
+} from "@/server/inbox/outbound-cap";
 import {
   capabilitiesFor,
+  outboundLimitMessage,
   textFits,
+  textLimitMessage,
   windowClosedMessage,
+  windowMsFor,
 } from "@/server/channels/capabilities";
 import { isChannelEnabled } from "@/server/channels/enabled";
 import { serializeMessage } from "@/server/inbox/ingest";
@@ -44,6 +58,10 @@ export class SendError extends Error {
     | "not_connected"
     | "reconnect_required"
     | "window_closed"
+    /** 022: el canal no admite más mensajes hasta que el cliente escriba. */
+    | "message_limit"
+    /** 022: el texto no cabe en el canal de esa conversación. */
+    | "text_too_long"
     | "meta_error"
     | "meta_unavailable"
     | "upload_failed";
@@ -71,6 +89,8 @@ type SendTarget = {
   instagram?: InstagramCredentials;
   /** 017: presente solo en conversaciones de Messenger. */
   messenger?: MessengerCredentials;
+  /** 022: presente solo en conversaciones de TikTok. */
+  tiktok?: TiktokCredentials;
 };
 
 /**
@@ -178,6 +198,57 @@ async function prepareSend(
       destinatario: { to: fbRecipient },
       recipient: fbRecipient,
       messenger: fbCreds,
+    };
+  }
+
+  // 022: TikTok. Transporte propio (Zernio) y los dos límites que ningún otro
+  // canal tiene: la ventana no se puede reabrir, y admite un número contado de
+  // mensajes desde el último entrante. Los dos se preguntan a las capacidades
+  // y se comprueban AQUÍ, antes de llamar a nadie: el envío que la plataforma
+  // rechazaría no sale, y falla con un motivo que el operador entiende.
+  if (row.conversation.channel === "tiktok") {
+    if (!isChannelEnabled("tiktok")) {
+      throw new SendError(
+        "not_connected",
+        "El canal de TikTok está desactivado en esta instancia"
+      );
+    }
+    const ttCreds = await getTiktokCredentialsByOrg(organizationId);
+    if (!ttCreds) {
+      throw new SendError("not_connected", "No hay cuenta de TikTok conectada");
+    }
+    if (ttCreds.status === "reconnect_required") {
+      throw new SendError(
+        "reconnect_required",
+        "La llave de Zernio dejó de servir: reconecta TikTok en Configuración"
+      );
+    }
+    if (
+      !isWindowOpen(
+        row.conversation.lastInboundAt,
+        new Date(),
+        windowMsFor("tiktok")
+      )
+    ) {
+      throw new SendError("window_closed", windowClosedMessage("tiktok"));
+    }
+    const enviados = await salientesDesdeElUltimoEntrante(
+      organizationId,
+      conversationId
+    );
+    if (!cabeOtroMensaje("tiktok", enviados)) {
+      throw new SendError("message_limit", outboundLimitMessage("tiktok"));
+    }
+    const ttRecipient = row.contact.waIdentity.startsWith(TT_PREFIX)
+      ? row.contact.waIdentity.slice(TT_PREFIX.length)
+      : row.contact.waIdentity;
+    return {
+      conversation: row.conversation,
+      credentials: null,
+      // TikTok tampoco pasa por la Graph API de WhatsApp.
+      destinatario: { to: ttRecipient },
+      recipient: ttRecipient,
+      tiktok: ttCreds,
     };
   }
 
@@ -300,11 +371,21 @@ export async function sendText(input: {
   const target = await prepareSend(input.conversationId, input.organizationId);
   const { credentials } = target;
 
+  // 022: el límite de longitud es del canal. WhatsApp y TikTok lo declaran en
+  // caracteres y se comprueba aquí, antes de llamar a nadie; Instagram y
+  // Messenger (en bytes) lo siguen comprobando en su propio camino.
+  const canal = target.conversation.channel;
+  if (capabilitiesFor(canal).maxTextChars !== null && !textFits(canal, input.text)) {
+    throw new SendError("text_too_long", textLimitMessage(canal));
+  }
+
   const waMessageId = target.instagram
     ? await callInstagramSend(target, input.text)
     : target.messenger
       ? await callMessengerSend(target, input.text)
-      : await callGraphSend(credentials!, {
+      : target.tiktok
+        ? await callTiktokSend(target, input.text)
+        : await callGraphSend(credentials!, {
           messaging_product: "whatsapp",
           ...target.destinatario,
           type: "text",
@@ -650,6 +731,43 @@ async function callMessengerSend(
         throw new SendError(
           "meta_unavailable",
           "Messenger no está disponible en este momento; intenta de nuevo"
+        );
+      }
+      throw new SendError("meta_error", err.message);
+    }
+    throw err;
+  }
+}
+
+/**
+ * 022 — Envío por el canal de TikTok. Mismo vocabulario de SendError que los
+ * demás canales. La ventana y el tope ya se comprobaron en `prepareSend`.
+ */
+async function callTiktokSend(target: SendTarget, text: string): Promise<string> {
+  const creds = target.tiktok!;
+
+  try {
+    const res = await sendTiktokText({
+      credentials: creds,
+      // Zernio responde dentro de SU conversación: sin esta referencia el
+      // envío no tiene a dónde ir.
+      threadRef: target.conversation.channelThreadRef,
+      text,
+    });
+    return res.platformMessageId;
+  } catch (err) {
+    if (err instanceof MetaApiError) {
+      if (err.isAuthError) {
+        await markTiktokReconnectRequired(creds.organizationId);
+        throw new SendError(
+          "reconnect_required",
+          "La llave de Zernio expiró o fue revocada: reconecta TikTok"
+        );
+      }
+      if (err.status === 0 || err.status >= 500) {
+        throw new SendError(
+          "meta_unavailable",
+          "TikTok no está disponible en este momento; intenta de nuevo"
         );
       }
       throw new SendError("meta_error", err.message);

@@ -4,6 +4,8 @@ import { getInstagramCredentialsByAccountRef } from "@/server/instagram/credenti
 import { processZernioEvent } from "@/server/instagram/ingest";
 import { getMessengerCredentialsByAccountRef } from "@/server/messenger/credentials";
 import { processZernioMessengerEvent } from "@/server/messenger/ingest";
+import { getTiktokCredentialsByAccountRef } from "@/server/tiktok/credentials";
+import { processZernioTiktokEvent, zernioPlatform } from "@/server/tiktok/ingest";
 import { parseZernioEvent, type ZernioEvent } from "@/server/zernio";
 
 /**
@@ -16,17 +18,18 @@ import { parseZernioEvent, type ZernioEvent } from "@/server/zernio";
  * de Messenger descartados en silencio — el peor modo de fallo posible, porque
  * el webhook responde 200 y no hay nada que investigar.
  *
- * Así que ambas rutas de Zernio reparten por `account.platform`, y da igual
- * cuál de las dos URLs esté configurada.
+ * Así que todas las rutas de Zernio reparten por `account.platform`, y da
+ * igual cuál de las URLs esté configurada. 022: TikTok entra al mismo reparto.
  */
 
 /** A qué canal pertenece un evento, o null si no es de ninguno nuestro. */
 export function zernioTargetChannel(payload: unknown): Channel | null {
   const evt = payload as ZernioEvent | null;
   if (!evt || typeof evt !== "object") return null;
-  const platform = (evt.account?.platform ?? "").toLowerCase();
+  const platform = zernioPlatform(evt);
   if (platform === "instagram") return "instagram";
   if (platform === "facebook" || platform === "messenger") return "messenger";
+  if (platform === "tiktok") return "tiktok";
   return null;
 }
 
@@ -39,7 +42,7 @@ export async function resolveZernioSecret(
   rawBody: string
 ): Promise<{ secret: string | null; accountRef: string | null; channel: Channel | null }> {
   const evt = parseZernioEvent(rawBody);
-  const accountRef = evt?.account?.id ?? null;
+  const accountRef = evt?.account?.id ?? evt?.account?.accountId ?? null;
   const channel = zernioTargetChannel(evt);
   if (!accountRef) return { secret: null, accountRef: null, channel };
 
@@ -48,7 +51,9 @@ export async function resolveZernioSecret(
       ? await getMessengerCredentialsByAccountRef(accountRef)
       : channel === "instagram"
         ? await getInstagramCredentialsByAccountRef(accountRef)
-        : null;
+        : channel === "tiktok"
+          ? await getTiktokCredentialsByAccountRef(accountRef)
+          : null;
 
   return { secret: creds?.webhookSecret ?? null, accountRef, channel };
 }
@@ -69,5 +74,6 @@ export async function processZernioPayload(payload: unknown): Promise<void> {
   }
 
   if (channel === "messenger") await processZernioMessengerEvent(payload);
+  else if (channel === "tiktok") await processZernioTiktokEvent(payload);
   else await processZernioEvent(payload);
 }

@@ -36,6 +36,9 @@ aceptar `tiktok` no genera SQL.
   más mensajes hasta que el cliente escriba. Se suma a `ai_paused`,
   `window_closed` y `sandbox_violation`. `window_closed` ya existía; ahora
   también lo devuelve un canal sin forma de reabrir la ventana.
+- **`POST /api/bot/messages`** — el tope de `text` pasa de 4,096 a 6,000
+  caracteres en el esquema; el límite real es el del canal y un texto que no
+  cabe sigue respondiendo 422 `invalid_body`.
 - **`GET /api/bot/context`** — `windowOpen` y `windowRemainingMs` usan la
   ventana del canal. Misma forma.
 - **Despacho** — `conversation.channel` puede valer `tiktok`;

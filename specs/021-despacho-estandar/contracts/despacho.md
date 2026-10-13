@@ -102,7 +102,8 @@ byte. La prueba gemela vive en el repo del cerebro.
 
 Notas que son contrato:
 
-- **`channel`** es `whatsapp`, `instagram` o `messenger`, y la lista crecerá.
+- **`channel`** es `whatsapp`, `instagram`, `messenger` o `tiktok` (022), y
+  la lista crecerá.
   Trátalo como informativo (tono, límite de longitud), no hagas un `switch`
   exhaustivo.
 - **`identity`** es la llave estable del contacto, la misma que acepta
@@ -111,7 +112,12 @@ Notas que son contrato:
 - **`conversation.id`** es el `conversationId` que piden `/api/bot/messages`,
   `/api/bot/handoff` y `/api/bot/typing`.
 - **`windowOpen: false`** significa que un texto libre será rechazado con 409
-  `window_closed`.
+  `window_closed`. La ventana es la del canal: 24 horas, o 48 en TikTok
+  (`windowExpiresAt` ya la trae calculada).
+- **Un canal puede tener tope de mensajes** (022). TikTok admite 10 después
+  del último mensaje del cliente; el siguiente `POST /api/bot/messages`
+  responde 409 `message_limit`. No reintentes: se levanta cuando el cliente
+  vuelve a escribir, y eso te llega como un despacho nuevo.
 - **`aiEnabled: false`** no debería llegarte: una conversación en pausa no se
   despacha. Viaja para que un cerebro defensivo pueda ignorarla.
 - **`mediaId`** se descarga por `GET /api/bot/media/{mediaId}`. Los adjuntos no

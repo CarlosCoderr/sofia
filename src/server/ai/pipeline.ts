@@ -8,6 +8,7 @@ import { chatJson, type ChatMessage } from "@/lib/ai";
 import { isAiConfiguredFor } from "@/lib/ai/provider";
 import { publish } from "@/server/events/bus";
 import { isWindowOpen } from "@/server/inbox/window";
+import { windowMsFor } from "@/server/channels/capabilities";
 import { SendError, sendText } from "@/server/inbox/send";
 import {
   agentActionSchema,
@@ -211,7 +212,14 @@ export async function runAgentTurn(
   }
 
   // Ventana cerrada: el agente JAMÁS envía texto libre → handoff 'ventana'.
-  if (!conversation.isTest && !isWindowOpen(conversation.lastInboundAt)) {
+  if (
+    !conversation.isTest &&
+    !isWindowOpen(
+      conversation.lastInboundAt,
+      new Date(),
+      windowMsFor(conversation.channel)
+    )
+  ) {
     await applyHandoff(conversationId, organizationId, "ventana");
     return leido;
   }
@@ -389,6 +397,15 @@ async function deliverReply(
   } catch (err) {
     if (err instanceof SendError && err.code === "window_closed") {
       await applyHandoff(conversation.id, conversation.organizationId, "ventana");
+      return;
+    }
+    // 022 — El canal ya no admite más mensajes hasta que el cliente escriba
+    // (el tope de TikTok). No se traspasa: dejaría la IA en pausa para siempre
+    // por algo que se arregla solo con el siguiente mensaje del cliente.
+    if (err instanceof SendError && err.code === "message_limit") {
+      console.warn(
+        `[agente] ${conversation.id}: ${err.message}. No se envía y la IA sigue activa.`
+      );
       return;
     }
     throw err;

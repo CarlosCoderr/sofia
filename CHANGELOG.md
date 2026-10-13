@@ -30,6 +30,19 @@ corren solas al arrancar.
   Contrato en `specs/021-despacho-estandar/contracts/despacho.md`.
 - **Migración `0016_despacho_al_cerebro`**: crea la tabla `dispatch`. Aditiva;
   corre sola al arrancar y queda vacía si no usas el despacho.
+- **Canal de TikTok** (022), opcional y apagado por defecto: con `tiktok` en
+  `CHANNELS`, los mensajes directos de tu cuenta TikTok Business entran a la
+  misma bandeja, con su distintivo, y los contesta el operador o el agente.
+  Llega por Zernio, con tu propia cuenta; se conecta en Ajustes → TikTok.
+  Vocero aplica lo que TikTok impone y lo dice claro: ventana de 48 horas sin
+  forma de reabrir, hasta 10 mensajes tras el último del cliente (el undécimo
+  responde 409 `message_limit`) y texto de hasta 6,000 caracteres.
+- **Migración `0018_canal_tiktok`**: crea la tabla `tiktok_credentials`.
+  Aditiva; corre sola al arrancar y queda vacía si no usas el canal.
+- `/api/bot/messages` gana el 409 `message_limit`. En `/api/bot/context` y en
+  el despacho, la ventana (`windowOpen`, `windowRemainingMs`,
+  `windowExpiresAt`) es la del canal de la conversación; para WhatsApp,
+  Instagram y Messenger sigue siendo de 24 horas.
 - **El agente ya no deja sin contestar el segundo mensaje** (025). Si el
   cliente escribía otra vez mientras se pensaba la respuesta a lo anterior,
   ese mensaje quedaba detrás de la respuesta y se daba por atendido. Ahora

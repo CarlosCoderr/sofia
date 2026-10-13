@@ -76,6 +76,13 @@ dejar que el operador las descubra con un error de la plataforma.
   del `multipart`: implementarlo sería adivinar contra una API de pago. Ningún
   canal social de la raíz manda adjuntos todavía (014 y 017 los dejaron
   fuera). El canal declara `outboundMedia: false` y el compositor lo dice.
+- **D11 — El límite de longitud deja de ser uno para todos.** La API del CRM
+  cortaba cualquier texto en 4,096 caracteres, que es el límite de WhatsApp:
+  con eso, los 6,000 de TikTok no se podían alcanzar. Ahora cada canal declara
+  el suyo (WhatsApp 4,096; TikTok 6,000; Instagram y Messenger siguen en
+  bytes), la API acepta hasta el mayor y el envío comprueba el del canal de
+  esa conversación. Un texto largo por WhatsApp sigue respondiendo 422.
+  *Añadida durante la implementación*: salió al probar AC9.
 - **D10 — El texto del agente sale como hoy.** Quitar Markdown y formato de
   WhatsApp en los canales sociales es la spec 024.
 
