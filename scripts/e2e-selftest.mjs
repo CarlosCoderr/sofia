@@ -982,7 +982,17 @@ async function main() {
     JSON.stringify(manual1)
   );
 
-  conv008 = await findConv008();
+  // Se espera la pausa, no un tiempo fijo: el eco guarda el mensaje y DESPUÉS
+  // pausa la IA. Leer la conversación entre un paso y otro —pasa con el
+  // servidor recién arrancado— daba la IA encendida sin que nada fallara.
+  await hasta(
+    async () => {
+      conv008 = await findConv008();
+      return conv008?.handoffReason === "manual_reply";
+    },
+    5000,
+    150
+  );
   ok(
     "la IA quedó pausada con handoff manual_reply",
     conv008?.aiEnabled === false && conv008?.handoffReason === "manual_reply",
