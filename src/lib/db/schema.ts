@@ -1153,6 +1153,17 @@ export const dispatch = pgTable(
     firstMessageAt: timestamp("first_message_at").notNull(),
     lastMessageAt: timestamp("last_message_at").notNull(),
     leasedUntil: timestamp("leased_until"),
+    /**
+     * 025 — Los entrantes que este despacho le DEBE al cerebro: los que lo
+     * encolaron o lo extendieron.
+     *
+     * La ráfaga se delimita por el último saliente, y eso confunde «sin
+     * responder» con «sin entregar»: lo que el cliente escribe mientras el
+     * cerebro piensa queda DETRÁS de su respuesta. Con los ids anotados, ese
+     * mensaje viaja aunque ya haya una respuesta después de él. Nulo en filas
+     * anteriores a esta columna, que se comportan como antes.
+     */
+    messageIds: jsonb("message_ids").$type<string[]>(),
     /** Motivo del último fallo. Nunca el cuerpo firmado ni la llave. */
     lastError: text("last_error"),
     createdAt: timestamp("created_at").notNull().defaultNow(),

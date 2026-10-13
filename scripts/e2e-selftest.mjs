@@ -1299,6 +1299,10 @@ async function respuestasDeBotonChecks() {
       boton?.type === "text",
       JSON.stringify((await mensajesDe(conv.id)).map((m) => [m.direction, m.type, m.text]))
     );
+    // La conversación se releyó: la de arriba se tomó en cuanto apareció, y la
+    // ingesta la crea ANTES de guardar el mensaje y anotarle la hora. Leída en
+    // ese hueco, la ventana salía cerrada sin que el producto fallara.
+    conv = (await conversacion()) ?? conv;
     ok(
       "abre la ventana de 24 h",
       conv.windowOpen === true && !!conv.lastInboundAt,

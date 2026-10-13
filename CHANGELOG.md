@@ -20,6 +20,20 @@ toque sus variables.
   Contrato en `specs/021-despacho-estandar/contracts/despacho.md`.
 - **Migración `0016_despacho_al_cerebro`**: crea la tabla `dispatch`. Aditiva;
   corre sola al arrancar y queda vacía si no usas el despacho.
+- **El agente ya no deja sin contestar el segundo mensaje** (025). Si el
+  cliente escribía otra vez mientras se pensaba la respuesta a lo anterior,
+  ese mensaje quedaba detrás de la respuesta y se daba por atendido. Ahora
+  quien lleva el turno recuerda qué mensajes debe: con el despacho, el cerebro
+  recibe ese mensaje en su propio despacho; con el agente incluido, el modelo
+  lo lee después de su propia respuesta y gasta un turno más, solo uno.
+- **Si una persona contesta desde la bandeja dentro de la ventana de
+  agrupado, el agente incluido ya no contesta encima.** Con el despacho ya era
+  así. La IA de la conversación sigue encendida para el siguiente mensaje.
+- **Migración `0017_dispatch_message_ids`**: una columna nula en `dispatch`.
+  Aditiva; corre sola al arrancar.
+- El contrato del despacho gana dos garantías: `messages` nunca llega vacío, y
+  un mensaje puede ser anterior a tu última respuesta (deduplica por
+  `messages[].id`, como ya pedía).
 - Si ya tienes Nea delante del CRM, **no pongas `BRAIN_DISPATCH_URL` todavía**:
   Nea 1.x recibe el webhook por su cuenta y le llegaría cada mensaje dos
   veces. El despacho es para la Nea que lo reciba

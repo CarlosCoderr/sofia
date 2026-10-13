@@ -147,7 +147,7 @@ function turno(text: string, conv = conversacion()) {
  * cargada, y la prueba que expiraba seguía corriendo en segundo plano y se
  * comía la cola de selects de la siguiente. Se carga UNA vez, con margen.
  */
-let runAgentTurn: (conversationId: string) => Promise<void>;
+let runAgentTurn: (conversationId: string) => Promise<unknown>;
 let SendError: typeof import("@/server/inbox/send").SendError;
 
 async function correrTurno() {

@@ -43,9 +43,11 @@ cuando el cliente escribe dos veces seguidas:
    mensaje que nunca leyó, o repite lo que ya dijo. En cloud, el 6 % de los
    turnos del agente incluido recibió un mensaje a mitad.
 3. **Una persona contesta dentro de la ventana.** El operador responde a mano
-   antes de que venza la ventana de agrupado. Ese mensaje ya está atendido; el
-   despacho no debe salir, ni vacío ni con el mensaje, porque sería contestar
-   dos veces.
+   antes de que venza la ventana de agrupado. Ese mensaje ya está atendido. Con
+   cerebro externo la raíz ya no lo despachaba (la ráfaga queda vacía), y eso
+   tiene que seguir así ahora que el despacho recuerda el mensaje: la memoria
+   no puede resucitar lo que una persona ya contestó. El agente incluido, en
+   cambio, sí gastaba un turno y contestaba encima.
 
 El hueco del despacho **en vuelo** (#111) ya está en la raíz desde el 021
 (AC5): `hayMensajesSinDespachar` vuelve a mirar la ráfaga tras entregar. Lo
@@ -132,6 +134,11 @@ conversación ya tenga una respuesta después.
   un despacho vacío.
 - **AC5** El despacho queda `descartado`, la conversación no pasa a un humano
   con motivo `error` y no hay despachos en espera.
+- **AC5b** Sin cerebro externo vale lo mismo: si el operador contesta dentro
+  de la ventana, el agente incluido no gasta un turno ni contesta encima. (En
+  cloud lo confirmó el dueño el 12-oct: una respuesta manual en la ventana
+  salda el mensaje.) La IA de la conversación sigue encendida: el siguiente
+  mensaje del cliente sí lo atiende el agente.
 
 ### Historia 3 — El agente incluido con un mensaje en vuelo (P1)
 
@@ -172,7 +179,7 @@ Sin `BRAIN_DISPATCH_URL`: contesta el agente incluido.
 | II · Soberanía | Sin dependencias ni terceros nuevos. Sin colas: la memoria del despacho es una columna; la del agente incluido, el coalesce que ya existía. |
 | III · Multi-tenancy | Las lecturas nuevas (`mensajesAnotados`, los atrasados de `rafagaDe`, los debidos del turno) filtran por `organization_id`. |
 | IV · Idempotencia | Los ids se deduplican al anotar y al leer. Reintentar un despacho no cambia qué debe. La migración es re-ejecutable por el migrador y aditiva. |
-| V · Hecho | Unitarias de las funciones puras (`sinDespachar`, `ordenarParaElTurno`, `debidosVigentes`); arnés E2E con las tres secciones nuevas, contra la app con mocks, en los dos modos (con cerebro y con agente incluido). |
+| V · Hecho | Unitarias de las funciones puras (`sinDespachar`, `ordenarParaElTurno`, `debidosVigentes`, `atendidoPorPersona`, `quedanDebidos`); arnés E2E con las tres secciones nuevas, contra la app con mocks, en los dos modos (con cerebro y con agente incluido). |
 | VI · Specs | Ciclo completo: migración y enmienda de un contrato publicado. Spec, plan y tareas antes del código. |
 | VIII · Foco | Arreglo del núcleo de conversación; no añade superficie. |
 | IX · En vivo | Una conversación real por WhatsApp con dos mensajes seguidos, primero en local con túnel y luego en Coolify (receta de `PLAN-2.0.md`). |
