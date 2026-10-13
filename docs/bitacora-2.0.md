@@ -174,7 +174,7 @@ que queda.
 | WhatsApp «Soporte» | Override de la WABA hacia `vocero-clase…`; sin override en el número |
 | Proyectos `vocero-16` y `vocero` | Vacíos |
 
-**Borrado (22:5x UTC, con volúmenes):** servicios `vocero16-crm` y
+**Borrado (noche del 13 al 14, hora UTC; con volúmenes):** servicios `vocero16-crm` y
 `ensayo-starter-crm`; del proyecto `vocero`, las apps `vocero-crm`
 (`anhoehhz…`) y `nea` y las bases `vocero-db` y `nea-db`. Se hizo **por la API
 de Coolify y no por el MCP**, con autorización expresa de Kevin: el MCP
