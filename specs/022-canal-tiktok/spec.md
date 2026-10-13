@@ -4,7 +4,10 @@
 
 **Created**: 2026-10-13
 
-**Status**: Especificada antes de escribir código.
+**Status**: Especificada antes de escribir código. Implementada y verde con
+simuladores. **Prueba en vivo pendiente de verificación humana**: TikTok solo
+entrega mensajes por API a cuentas Business y la del dueño está en revisión
+(2026-10-13). El canal va apagado por defecto.
 
 **Input**: segunda spec de la 1.6.0 (`PLAN-2.0.md`, aprobado por el dueño el
 2026-10-13). Moldes: [014](../014-canal-instagram/spec.md) y

@@ -17,6 +17,8 @@ instalación que no toque sus variables.
   Vocero aplica lo que TikTok impone y lo dice claro: ventana de 48 horas sin
   forma de reabrir, hasta 10 mensajes tras el último del cliente (el undécimo
   responde 409 `message_limit`) y texto de hasta 6,000 caracteres.
+  **Aún sin probar con un mensaje real de TikTok** (solo con simulador): la
+  cuenta Business de prueba está en revisión.
 - **Migración `0018_canal_tiktok`**: crea la tabla `tiktok_credentials`.
   Aditiva; corre sola al arrancar y queda vacía si no usas el canal.
 - `/api/bot/messages` gana el 409 `message_limit`. En `/api/bot/context` y en
