@@ -116,3 +116,75 @@ Para repetir la prueba: `node ops/relay.mjs 3281 <url>`, túnel a `:3281`,
 ### Qué sigue
 
 022, canal TikTok por Zernio.
+
+## 2026-10-13 — 1.5.1, la clase multicanal y el starter 2.2.0
+
+Escrito después de los hechos: fue un día de clase y la bitácora quedó para el
+final.
+
+### Versión 1.5.1
+
+PR #113 (`dad742f`), tag `v1.5.1`, imagen `ghcr.io/kevinrivm/vocero-crm:1.5.1`
+y release en GitHub. Saca la 025 antes que la 1.6.0, junto con el despacho al
+cerebro que ya estaba en `main`.
+
+### 022, TikTok
+
+PR #112 abierto, sin mergear. Verde con simuladores (`e2e-tiktok` 52/52, dos
+corridas). **Pendiente de verificación humana:** `@kevin.belier` es cuenta
+personal y TikTok solo entrega mensajes por API a cuentas Business; la
+solicitud de Kevin está en revisión.
+
+### Demo de la clase (instancia `vocero16-crm`, ya borrada)
+
+- La instancia de pruebas pasó a la imagen `1.5.1` con
+  `CHANNELS=whatsapp,instagram,messenger` y el agente incluido encendido.
+- **Dominio:** con permiso expreso de Kevin, `vocero-clase.kevinbelier.cloud`
+  se le quitó a la app `vocero-crm` del proyecto `vocero` (instalación anterior
+  del starter) y se le dio a la demo. Después de la demo se liberó para la
+  instalación del starter.
+- **WhatsApp «Soporte»:** el override del número se movió de la Nea del demo de
+  comida a la demo (20:58 UTC) y se reapuntó al cambiar el dominio (~21:03
+  UTC). **No se devolvió**: al terminar se quitó (~22:15 UTC) porque el número
+  pasó a la instalación de la clase, por decisión de Kevin. El original sigue
+  en `.override-soporte.json`.
+- **Zernio:** webhook `vocero-16-clase` (`6ace9b814a6701990705765e`), limitado
+  al Instagram y a la página de Kevin; desactivado al terminar.
+- **Probado en vivo:** WhatsApp, entrada y respuesta del agente en 11 s.
+  Instagram y Messenger: conexión y evento de prueba de Zernio en 200; los DM
+  reales los mandó Kevin en la clase, no quedaron medidos aquí.
+- Observado y sin investigar: con dos preguntas seguidas por WhatsApp, el
+  modelo las leyó en el mismo turno y contestó solo la primera.
+
+### Starter 2.2.0
+
+Repo local `Vocero-cloud astra/vocero-starter-v2` (sin remoto), commit
+`a7b8de7`, tag `v2.2.0`, zip al lado. Agrega `CHANNELS` y `AGENTE` al `.env`,
+las skills `conectar-canales` y `agente-incluido` y el guion `canales.mjs`.
+Ensayado contra Zernio real y una instancia aparte (`ensayo-starter-crm`, ya
+borrada). Kevin lo corrió completo en la clase: de ahí salió la instalación
+que queda.
+
+### Qué queda en Coolify
+
+| Qué | Dónde |
+|---|---|
+| Instalación de la clase (se queda como instancia de pruebas) | Proyecto `vocero-clase` (`yyojx68tpzqbyrlfglhstbbn`): app `vocero-crm` (`3jinuviignszpotzzmvs6nrf`), base `vocero-clase-db` (`apppb0cmt0hwzzyoe8z6a699`). `https://vocero-clase.kevinbelier.cloud`, imagen `1.5.1`, tres canales |
+| Sus secretos | En el `.env` del starter de Kevin (`Downloads/vocero-starter-v2`) y en las variables de la app. La bóveda del espacio no los tiene |
+| WhatsApp «Soporte» | Override de la WABA hacia `vocero-clase…`; sin override en el número |
+| Proyectos `vocero-16` y `vocero` | Vacíos |
+
+**Borrado (noche del 13 al 14, hora UTC; con volúmenes):** servicios `vocero16-crm` y
+`ensayo-starter-crm`; del proyecto `vocero`, las apps `vocero-crm`
+(`anhoehhz…`) y `nea` y las bases `vocero-db` y `nea-db`. Se hizo **por la API
+de Coolify y no por el MCP**, con autorización expresa de Kevin: el MCP
+devolvía «el usuario rechazó» sin mostrarle el diálogo. Guion
+`ops/borrar-coolify.mjs`, de lista cerrada. Los tres demos multinicho no se
+tocaron.
+
+El demo de comida se quedó sin WhatsApp: su número es ahora el de la
+instalación de la clase.
+
+### Qué sigue
+
+Poner la 022 al día con `main` y empezar la 023 (Ajustes → Canales).
