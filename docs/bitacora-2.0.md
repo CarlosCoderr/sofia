@@ -117,6 +117,91 @@ Para repetir la prueba: `node ops/relay.mjs 3281 <url>`, túnel a `:3281`,
 
 022, canal TikTok por Zernio.
 
+## 2026-10-13 — 022: canal de TikTok por Zernio
+
+**PR**: [#112](https://github.com/kevinrivm/vocero-crm/pull/112), rama
+`feat/022-canal-tiktok`. Spec antes del código (`b32d4da`); implementación en
+`6bd9b4d`. **Abierto, sin mergear**: falta la prueba en vivo.
+
+### Qué quedó
+
+- `tiktok` es un canal más, opcional (`CHANNELS`), con Zernio como única
+  fuente: tabla `tiktok_credentials` (migración `0018_canal_tiktok`), adaptador
+  `src/server/tiktok/`, webhook `/api/webhooks/tiktok/<token>`, Ajustes →
+  TikTok, distintivo y filtro en la bandeja. Identidad `tt:<id>`.
+- Los límites de TikTok se declaran en las capacidades del canal y el envío
+  los comprueba antes de llamar a Zernio: ventana de 48 h sin forma de reabrir
+  (409 `window_closed`), 10 salientes desde el último entrante (409
+  `message_limit`, nuevo en `/api/bot/messages`) y 6,000 caracteres.
+- Dos cambios del núcleo que el canal obligó a hacer: la ventana se pregunta
+  por canal (`windowMsFor`) en la bandeja, en `/api/bot/context` y en el
+  despacho; y el tope de 4,096 caracteres dejó de ser uno global en el esquema
+  de la API para declararse en WhatsApp. Los demás canales no cambian.
+- `sendZernioMessage` lee `data.messageId`, que es donde la API real devuelve
+  el id. El mock respondía con otra forma y la raíz guardaba un id inventado
+  para Instagram y Messenger por Zernio.
+
+### Decisiones que Kevin no ha revisado
+
+- **La imagen saliente quedó fuera** (spec, D9), aunque la fila del plan la
+  enumeraba. Zernio la acepta como URL pública o `multipart`; la raíz no
+  expone sus adjuntos sin sesión y la documentación no nombra el campo del
+  `multipart`. Ningún canal social de la raíz envía adjuntos todavía.
+- **Si el agente topa con el tope de 10, calla sin traspasar** (D7).
+- **WhatsApp: el límite de 4,096 se movió del esquema de la API al canal**
+  (D11). Sigue respondiendo 422; cambia el texto del error.
+
+### Cómo se probó
+
+| Qué | Resultado |
+|---|---|
+| `typecheck`, `lint`, `test`, `build` | Verdes en las dos configuraciones; la completa ya incluye `tiktok`. 1 040 unitarias. CI del PR: 3 de 3. |
+| `scripts/e2e-tiktok.mjs` | 52/52, cuatro corridas, contra el mock de Zernio: conexión, firma, dedup, agente, operador, el undécimo mensaje, 6,000 caracteres, 30 y 49 horas, descartes y reparto por plataforma. |
+| `scripts/e2e-despacho.mjs` | 94/94 con cerebro (sección nueva: `channel: "tiktok"`, `tt:`, `windowExpiresAt` a 48 h) y 14/14 con el agente incluido. |
+| `scripts/e2e-messenger.mjs` · selftest | 42/42 · 213/213. |
+| Migración | Base vacía; la que venía de `0016`/`0017` con su despacho pendiente; y la instancia de Coolify, que conservó sus 9 conversaciones. |
+| Interfaz | Ajustes → TikTok, distintivo, filtro y compositor con la ventana cerrada, vistos en el navegador contra la app local. |
+| Coolify | `vocero-16` sirve `6bd9b4d` con `CHANNELS=whatsapp,tiktok`. La cuenta se conectó desde la API de ajustes: la llave se validó contra el Zernio real. |
+| **En vivo** | **Pendiente de verificación humana.** |
+
+### Por qué falta la prueba en vivo
+
+En Zernio, la cuenta `kevin.belier` de TikTok figura como **personal**
+(`tiktokAccountType: personal`, conectada el 13-oct). TikTok solo permite
+mensajes directos por API a cuentas **Business**: mientras siga así no llega
+ningún webhook. Además hace falta que una persona mande el DM (TikTok no deja
+que el negocio inicie). Lo que falta, en orden:
+
+1. Pasar `@kevin.belier` a cuenta Business en TikTok, con los mensajes
+   directos abiertos, y reconectarla en Zernio si este no refleja el cambio.
+2. Dar de alta en Zernio el webhook de la instancia, **acotado a esa cuenta**
+   (`accountIds`), con el evento `message.received` y el secreto que ya está
+   en `.env.vocero16`. La llave de Zernio también sirve cuentas de clientes y
+   ya hay un webhook de equipo hacia el CRM de uno de ellos: sin `accountIds`,
+   los DMs de esas cuentas llegarían a la instancia de pruebas.
+3. Encender el agente de `vocero-16` solo durante la prueba: la raíz no tiene
+   lista de permitidos y contestaría a cualquiera que escriba a esa cuenta.
+4. Un DM desde un TikTok personal: entra a la bandeja, el agente contesta, el
+   operador responde, y el undécimo mensaje se rechaza con 409.
+
+### Dónde vive cada cosa
+
+| Qué | Dónde |
+|---|---|
+| Instancia | La misma de la 025 (`vocero16-crm`, `rwzjzhsi5boaujr25snbjuxe`), ahora desde la rama `feat/022-canal-tiktok`, con el agente apagado. |
+| Cuenta de TikTok en Zernio | `6ace6bfe5d6259b1df1e1bf2` (`@kevin.belier`), perfil «Kevin Belier». |
+| Llave de Zernio de la instancia | Cifrada en su base (Ajustes → TikTok). Sale de `ZERNIO_API_KEY` de la bóveda. |
+| Secreto del webhook de TikTok | `TIKTOK_WEBHOOK_SECRET` en `.env.vocero16` del espacio de trabajo, y en la tabla `tiktok_credentials` de la instancia (sin cifrar, igual que el de Instagram y el de Messenger). |
+| Guiones | `ops/zernio.mjs` (solo enseña las cuentas de Kevin) y `ops/vivo.mjs tiktok | estado`. |
+| Local | Bases `vocero_022_tiktok` y `vocero_022_cerebro` en `vocero-20-pg`; `.env.e2e-tiktok` y `.env.e2e-cerebro22` en el clon. |
+
+No se creó ningún webhook en Zernio ni se tocó ninguna cuenta que no sea la de
+Kevin.
+
+### Qué sigue
+
+La prueba en vivo de la 022 cuando la cuenta sea Business; después, 023.
+
 ## 2026-10-13 — 1.5.1, la clase multicanal y el starter 2.2.0
 
 Escrito después de los hechos: fue un día de clase y la bitácora quedó para el
