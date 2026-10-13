@@ -29,6 +29,16 @@ que un mismo cerebro sirva a las dos ediciones. Las diferencias están marcadas.
   la última respuesta. Si escribe otra vez antes de que contestes, el siguiente
   despacho repite los mensajes anteriores junto con el nuevo. Deduplica por
   `messages[].id`. Una ráfaga trae como mucho los últimos 20 mensajes.
+- **Un mensaje puede ser anterior a tu última respuesta** (025). El cliente
+  escribe «¿y hacen envíos?» mientras tú todavía piensas la respuesta a
+  «¿tienen taladros?». Tu respuesta sale, y unos segundos después te llega un
+  despacho con ese segundo mensaje, que por hora quedó ANTES de lo que
+  contestaste. No lo habías leído: contéstalo. Si ordenas tu historial por
+  hora, no concluyas que ya está atendido solo porque después viene una
+  respuesta tuya; guíate por los ids.
+- **`messages` nunca llega vacío** (025). Trae al menos un mensaje. Si una
+  persona del negocio contestó dentro de la ventana, ese mensaje ya está
+  atendido y no se te despacha nada.
 
 ## Cuándo se despacha
 
