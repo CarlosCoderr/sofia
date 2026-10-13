@@ -5,11 +5,21 @@ sigue el SemVer del [README](README.md#versiones): una menor trae funciones
 nuevas y actualizar es redesplegar. Desde 1.4.0, cada tag `vX.Y.Z` publica la
 imagen `ghcr.io/kevinrivm/vocero-crm:X.Y.Z`.
 
-## Sin publicar — camino a 2.0.0
+## 1.5.1 — 2026-10-13
 
-Lo que ya está en `main` de la sección 2.0.0 del
-[plan](docs/plan-1.5-y-2.0.md). Nada de esto cambia una instalación que no
-toque sus variables.
+Sale antes que la 1.6.0 por un arreglo que no espera: el agente dejaba sin
+contestar el segundo mensaje cuando el cliente escribía dos veces seguidas.
+Trae también lo que ya estaba en `main` camino a la 2.0.0 (el despacho al
+cerebro), que no cambia nada si no tocas tus variables.
+
+### Actualizar desde 1.5.0
+
+Redespliega con la imagen `1.5.1` (compose: `git pull` y
+`docker compose up -d`; Coolify: cambia la etiqueta y redespliega). Respalda
+la base antes, como siempre. Las migraciones `0016` y `0017` son aditivas y
+corren solas al arrancar.
+
+### Cambios
 
 - **Despacho al cerebro** (#89): con `BRAIN_DISPATCH_URL` y `BOT_API_KEY`, el
   CRM le pasa cada turno a tu cerebro externo con un `POST` firmado, en vez de
