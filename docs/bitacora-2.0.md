@@ -156,7 +156,7 @@ Para repetir la prueba: `node ops/relay.mjs 3281 <url>`, túnel a `:3281`,
 | Qué | Resultado |
 |---|---|
 | `typecheck`, `lint`, `test`, `build` | Verdes en las dos configuraciones; la completa ya incluye `tiktok`. 1 040 unitarias. CI del PR: 3 de 3. |
-| `scripts/e2e-tiktok.mjs` | 52/52, cuatro corridas, contra el mock de Zernio: conexión, firma, dedup, agente, operador, el undécimo mensaje, 6,000 caracteres, 30 y 49 horas, descartes y reparto por plataforma. |
+| `scripts/e2e-tiktok.mjs` | 52/52, dos corridas sobre el código final, contra el mock de Zernio: conexión, firma, dedup, agente, operador, el undécimo mensaje, 6,000 caracteres, 30 y 49 horas, descartes y reparto por plataforma. |
 | `scripts/e2e-despacho.mjs` | 94/94 con cerebro (sección nueva: `channel: "tiktok"`, `tt:`, `windowExpiresAt` a 48 h) y 14/14 con el agente incluido. |
 | `scripts/e2e-messenger.mjs` · selftest | 42/42 · 213/213. |
 | Migración | Base vacía; la que venía de `0016`/`0017` con su despacho pendiente; y la instancia de Coolify, que conservó sus 9 conversaciones. |
