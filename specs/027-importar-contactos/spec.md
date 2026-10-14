@@ -5,7 +5,7 @@
 **Created**: 2026-10-13
 
 **Status**: Especificada antes de escribir código. Implementada; gates y
-guiones E2E en verde.
+guiones E2E en verde. Probada en vivo con la imagen `1.6.0-rc.4` (bitácora).
 
 **Input**: sexta spec de la 1.6.0 (`PLAN-2.0.md`, aprobado por el dueño el
 2026-10-13). Puerto de Vocero Cloud #108 (`a6d1bdf`): `src/lib/contact-import.ts`,
