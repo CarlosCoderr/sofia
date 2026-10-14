@@ -412,38 +412,47 @@ export function Composer({
           className="hidden"
           onChange={(e) => pickFile(e.target.files?.[0] ?? null)}
         />
-        <div className="flex shrink-0 items-center gap-0.5">
-          <button
-            onClick={() => fileRef.current?.click()}
-            aria-label="Adjuntar archivo"
-            title="Adjuntar imagen, video, audio o documento"
-            className="rounded p-1.5 text-text-3 transition-colors hover:bg-secondary hover:text-foreground"
-          >
-            <Paperclip className="h-[18px] w-[18px]" strokeWidth={1.7} />
-          </button>
-          <button
-            onClick={() => setPanel(panel === "location" ? null : "location")}
-            aria-label="Enviar ubicación"
-            title="Enviar ubicación"
-            className={cn(
-              "rounded p-1.5 text-text-3 transition-colors hover:bg-secondary hover:text-foreground",
-              panel === "location" && "bg-secondary text-brand"
+        {/* 028: solo lo que el canal puede mandar; en las redes, la caja sola. */}
+        {(conversation.composer.media || conversation.composer.structured) && (
+          <div className="flex shrink-0 items-center gap-0.5">
+            {conversation.composer.media && (
+              <button
+                onClick={() => fileRef.current?.click()}
+                aria-label="Adjuntar archivo"
+                title="Adjuntar imagen, video, audio o documento"
+                className="rounded p-1.5 text-text-3 transition-colors hover:bg-secondary hover:text-foreground"
+              >
+                <Paperclip className="h-[18px] w-[18px]" strokeWidth={1.7} />
+              </button>
             )}
-          >
-            <MapPin className="h-[18px] w-[18px]" strokeWidth={1.7} />
-          </button>
-          <button
-            onClick={() => setPanel(panel === "contact" ? null : "contact")}
-            aria-label="Compartir contacto"
-            title="Compartir contacto"
-            className={cn(
-              "rounded p-1.5 text-text-3 transition-colors hover:bg-secondary hover:text-foreground",
-              panel === "contact" && "bg-secondary text-brand"
+            {conversation.composer.structured && (
+              <>
+                <button
+                  onClick={() => setPanel(panel === "location" ? null : "location")}
+                  aria-label="Enviar ubicación"
+                  title="Enviar ubicación"
+                  className={cn(
+                    "rounded p-1.5 text-text-3 transition-colors hover:bg-secondary hover:text-foreground",
+                    panel === "location" && "bg-secondary text-brand"
+                  )}
+                >
+                  <MapPin className="h-[18px] w-[18px]" strokeWidth={1.7} />
+                </button>
+                <button
+                  onClick={() => setPanel(panel === "contact" ? null : "contact")}
+                  aria-label="Compartir contacto"
+                  title="Compartir contacto"
+                  className={cn(
+                    "rounded p-1.5 text-text-3 transition-colors hover:bg-secondary hover:text-foreground",
+                    panel === "contact" && "bg-secondary text-brand"
+                  )}
+                >
+                  <UserRound className="h-[18px] w-[18px]" strokeWidth={1.7} />
+                </button>
+              </>
             )}
-          >
-            <UserRound className="h-[18px] w-[18px]" strokeWidth={1.7} />
-          </button>
-        </div>
+          </div>
+        )}
         <textarea
           ref={taRef}
           placeholder={file ? "Pie del adjunto (opcional)…" : "Escribe una respuesta…"}

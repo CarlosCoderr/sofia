@@ -21,6 +21,13 @@ instalación que no toque sus variables.
   cuenta Business de prueba está en revisión.
 - **Migración `0018_canal_tiktok`**: crea la tabla `tiktok_credentials`.
   Aditiva; corre sola al arrancar y queda vacía si no usas el canal.
+- **Pulido de la bandeja multicanal** (028). En Instagram, Messenger y TikTok
+  el compositor ya no ofrece adjuntos, ubicación ni contacto, que esos canales
+  no mandan. La bandeja vacía y el filtro de un canal sin conversaciones dicen
+  qué pasa («Nadie ha escrito por Instagram todavía»). Con más de un canal, el
+  menú, la pestaña y la pantalla de entrada dicen «multicanal». Y al cambiar de
+  conversación ya no se arrastran el borrador ni el archivo elegido: antes un
+  adjunto escogido para una persona podía salir en la conversación de otra.
 - **El agente contesta los saludos** (029). Un «Hola, prueba» —lo primero que
   escribe quien estrena su agente— se quedaba sin respuesta: el agente lo tomaba
   por un mensaje de prueba y callaba. Ahora solo calla ante un cierre («ok»,

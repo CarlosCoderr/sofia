@@ -388,6 +388,23 @@ async function ventanaHumana() {
   ok("y ahí la IA sí contesta → 200", ttIa.res.ok, `${ttIa.res.status} ${JSON.stringify(ttIa.json)}`);
   const convWa = (await conversaciones()).find((c) => c.channel === "whatsapp");
   ok("WhatsApp tampoco la tiene", convWa?.humanWindow === null, JSON.stringify(convWa?.humanWindow));
+
+  // 028 · D1 — El compositor solo ofrece lo que el canal puede mandar.
+  console.log("\n== 028: lo que el compositor ofrece por canal ==");
+  const todas = await conversaciones();
+  ok(
+    "WhatsApp: adjuntos, ubicación y contacto",
+    convWa?.composer?.media === true && convWa?.composer?.structured === true,
+    JSON.stringify(convWa?.composer)
+  );
+  for (const canal of ["instagram", "messenger", "tiktok"]) {
+    const c = todas.find((x) => x.channel === canal);
+    ok(
+      `${canal}: la caja de texto sola`,
+      c?.composer?.media === false && c?.composer?.structured === false,
+      JSON.stringify(c?.composer)
+    );
+  }
 }
 
 // ---------------------------------------------------------------------------

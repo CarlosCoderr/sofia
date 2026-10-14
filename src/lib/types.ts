@@ -23,6 +23,11 @@ export type ConversationDto = {
    * puede contestar; `remainingMs` es lo que le queda.
    */
   humanWindow: { open: boolean; remainingMs: number } | null;
+  /**
+   * 028 — Lo que el compositor puede ofrecer en este canal: adjuntos, y
+   * ubicación o contacto. El servidor rechaza lo demás igual.
+   */
+  composer: { media: boolean; structured: boolean };
   preview: string | null;
   /** 018: el anuncio que abrió la conversación, para la marca de la lista. */
   anuncio: {
