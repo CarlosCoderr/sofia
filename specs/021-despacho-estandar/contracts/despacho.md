@@ -39,6 +39,14 @@ que un mismo cerebro sirva a las dos ediciones. Las diferencias están marcadas.
 - **`messages` nunca llega vacío** (025). Trae al menos un mensaje. Si una
   persona del negocio contestó dentro de la ventana, ese mensaje ya está
   atendido y no se te despacha nada.
+- **No todo lo que llega a esta URL es un turno** (026). Un cuerpo con `type`
+  es un evento, no un despacho: hoy, `conversation.deleted`. Mira `type` (o
+  la cabecera `x-vocero-event`) antes de buscar `messages`. Ver «Eventos que
+  no son un turno».
+- **Un `conversation.id` nuevo para una identidad que ya conocías es una
+  conversación nueva** (026). El negocio pudo haber eliminado la anterior:
+  olvida lo que recordabas de esa persona y empieza de cero. Es la regla que
+  cubre un aviso de borrado que nunca te llegó.
 
 ## Cuándo se despacha
 
@@ -158,6 +166,52 @@ variación para que no reintenten todos a la vez). Agotados, o ante un 4xx:
 Esa conversación no vuelve a despacharse hasta que alguien reactive la IA desde
 la bandeja. El mensaje del cliente **ya está en la bandeja** en todos estos
 caminos.
+
+## Eventos que no son un turno
+
+### `conversation.deleted` (026)
+
+Quien administra el negocio eliminó una conversación desde la bandeja. El CRM
+ya la borró —mensajes, adjuntos y ficha— y te pide que la olvides tú también.
+
+Llega por `POST` a la **misma URL** y con la **misma firma** que un despacho.
+
+| Cabecera | Valor |
+|---|---|
+| `x-vocero-signature` | `sha256=<hmac del cuerpo crudo>`, con `BOT_API_KEY`, igual que un turno |
+| `x-vocero-event` | `conversation.deleted` |
+| `x-vocero-organization` | El `slug` de la organización, o su `id` si no tiene |
+
+No lleva `x-vocero-dispatch-id`: no es un despacho.
+
+```json
+{
+  "type": "conversation.deleted",
+  "eventId": "olv_4f8k2m9x1c7b3n5v0q6z",
+  "organization": { "id": "org_…", "slug": null },
+  "conversation": { "id": "cv_…", "channel": "whatsapp" },
+  "contact": { "id": "ct_…", "identity": "5215550001111" },
+  "deletedAt": "2026-10-13T12:00:00.000Z"
+}
+```
+
+- **No trae nada de lo borrado**, solo con qué encontrarlo. `identity` va
+  porque un cerebro suele indexar su memoria por persona, no por el id de
+  conversación del CRM.
+- **Qué hacer:** borrar lo que guardes de esa conversación (historial,
+  resúmenes, lo que hayas aprendido de la persona en ella) y contestar 2xx.
+  Si el contacto se eliminó también, llega igual: un evento por conversación.
+- **Se intenta una vez**, con 8 segundos de espera, y no se reintenta. El
+  borrado en el CRM no depende de tu respuesta. Si no contestas 2xx, quien
+  eliminó ve que no confirmaste; la regla del `conversation.id` nuevo (arriba)
+  es la que evita que uses memoria de algo que ya no existe.
+- **`eventId`** identifica el aviso, por si tu infraestructura lo entrega dos
+  veces.
+- Contestar 4xx a un evento que no conoces es inofensivo: no pausa la
+  conversación ni cuenta como fallo del despacho.
+- Es el mismo evento que manda Vocero Cloud. El orden de las claves es
+  contrato: una prueba gemela lo fija byte a byte en este repositorio
+  (`tests/unit/olvido-contrato.test.ts`) y en el del cerebro.
 
 ## Cómo contestar
 

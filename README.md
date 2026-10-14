@@ -65,6 +65,11 @@ cuál: «Anuncio · titular» en la lista, un filtro «Anuncios», y en el panel
 contacto el creativo, el texto y el enlace del anuncio. No pide bandera ni
 credenciales: el dato llega en el mismo webhook.
 
+Una conversación se puede **eliminar** desde el panel del contacto (lo ve quien
+administra el negocio): se van los mensajes, sus adjuntos y lo que el agente
+aprendió en ella, y el contacto se queda en su etapa salvo que pidas borrarlo
+también. Si la persona vuelve a escribir, el agente empieza de cero.
+
 ### 📊 Contactos y pipeline kanban
 
 Cada persona que escribe queda registrada sola y entra al pipeline

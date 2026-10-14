@@ -21,6 +21,18 @@ instalación que no toque sus variables.
   cuenta Business de prueba está en revisión.
 - **Migración `0018_canal_tiktok`**: crea la tabla `tiktok_credentials`.
   Aditiva; corre sola al arrancar y queda vacía si no usas el canal.
+- **Eliminar una conversación** (026). En la bandeja, al fondo de Detalles:
+  se borran los mensajes, sus adjuntos (también el archivo) y la ficha; el
+  contacto conserva sus notas y su etapa, salvo que marques «Borrar también el
+  contacto y su lead». Es irreversible y solo lo ve quien administra el
+  negocio. Una cita agendada por venir lo detiene: primero se cancela.
+- **El cerebro olvida lo borrado** (026). Con el despacho activo, tras eliminar
+  una conversación el CRM manda un evento `conversation.deleted` a la misma
+  URL y con la misma firma que un turno (un intento, sin reintentos). Si tu
+  cerebro recibe despachos, mira `type` antes de buscar `messages`: un
+  cuerpo con `type` no es un turno. Y trata un `conversation.id` nuevo para
+  una persona que ya conocías como una conversación nueva. Detalle en
+  `specs/021-despacho-estandar/contracts/despacho.md`.
 - **En Instagram, Messenger y TikTok el agente ya no escribe con asteriscos**
   (024). El agente incluido y los cerebros externos marcan negritas como en
   WhatsApp; esas redes no las dibujan y el cliente veía `*así*`. Ahora el

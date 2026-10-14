@@ -134,8 +134,14 @@ async function conversaciones() {
   return (await api("/api/conversations")).json?.conversations ?? [];
 }
 
+// La ingesta corre tras responder el webhook y sella `lastInboundAt` al final:
+// se espera a la conversación YA con su último entrante, que es de lo que
+// depende la ventana. Sin eso, en un servidor frío el check de las 30 horas
+// leía la conversación a medio ingerir.
 const convDe = (nombre) =>
-  hasta(async () => (await conversaciones()).find((c) => c.contact.name === nombre));
+  hasta(async () =>
+    (await conversaciones()).find((c) => c.contact.name === nombre && c.lastInboundAt !== null)
+  );
 
 async function mensajesDe(convId) {
   return (await api(`/api/conversations/${convId}/messages`)).json?.messages ?? [];
