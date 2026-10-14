@@ -21,6 +21,11 @@ instalación que no toque sus variables.
   cuenta Business de prueba está en revisión.
 - **Migración `0018_canal_tiktok`**: crea la tabla `tiktok_credentials`.
   Aditiva; corre sola al arrancar y queda vacía si no usas el canal.
+- **El agente contesta los saludos** (029). Un «Hola, prueba» —lo primero que
+  escribe quien estrena su agente— se quedaba sin respuesta: el agente lo tomaba
+  por un mensaje de prueba y callaba. Ahora solo calla ante un cierre («ok»,
+  «gracias», un emoji). Y deja de gastar un segundo llamado al modelo en cada
+  turno después del primero, así que contesta antes. Sin nada que configurar.
 - **Importar contactos** (027). En Contactos, «Importar»: un CSV con una
   columna de nombre y una de teléfono (con código de país). Se lee en tu
   navegador y te enseña qué va a entrar y qué se queda fuera, con su motivo,

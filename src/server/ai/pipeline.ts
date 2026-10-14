@@ -17,7 +17,10 @@ import {
   type AgentActionType,
 } from "@/server/ai/actions";
 import { HANDOFF_BACKUP_ACK, matchesHandoffIntent } from "@/server/ai/handoff";
-import { buildAgentSystemPrompt } from "@/server/ai/prompts";
+import {
+  buildAgentSystemPrompt,
+  TURN_FORMAT_REMINDER,
+} from "@/server/ai/prompts";
 import {
   atendidoPorPersona,
   debidosVigentes,
@@ -287,6 +290,8 @@ export async function runAgentTurn(
     ...(mapaDeHuecos
       ? [{ role: "system" as const, content: mapaDeHuecos }]
       : []),
+    // 029 — Lo último que lee el modelo: contestar con el JSON de la acción.
+    { role: "system", content: TURN_FORMAT_REMINDER },
   ];
 
   const result = await chatJson(agentActionSchema(agenda), messages, {
