@@ -28,6 +28,7 @@ instalación que no toque sus variables.
   menú, la pestaña y la pantalla de entrada dicen «multicanal». Y al cambiar de
   conversación ya no se arrastran el borrador ni el archivo elegido: antes un
   adjunto escogido para una persona podía salir en la conversación de otra.
+  Los avatares de nombres con emoji («Kevin Belier 🐏») ya no salen rotos.
 - **El agente contesta los saludos** (029). Un «Hola, prueba» —lo primero que
   escribe quien estrena su agente— se quedaba sin respuesta: el agente lo tomaba
   por un mensaje de prueba y callaba. Ahora solo calla ante un cierre («ok»,

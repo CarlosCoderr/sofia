@@ -5,7 +5,7 @@
 **Created**: 2026-10-14
 
 **Status**: Especificada antes de escribir código. Implementada; gates,
-guiones E2E y capturas en verde. D5 y D6 se añadieron al implementar.
+guiones E2E y capturas en verde. D5 y D6 se añadieron al implementar; D7, en la prueba en vivo.
 
 **Input**: séptima spec de la 1.6.0 (`PLAN-2.0.md`, aprobado por el dueño el
 2026-10-13): «filtro de la bandeja por canal; distintivos de canal con TikTok;
@@ -62,6 +62,12 @@ servidor por `CHANNELS`, igual que la agenda, y la vista previa de Ajustes →
 Marca enseña la misma. Lo mismo el título de la pestaña y la pantalla de
 entrada: «CRM multicanal con agente de IA» en lugar de «CRM de WhatsApp…».
 
+**D7 — Las iniciales del avatar ignoran los emojis** (añadido en la prueba en
+vivo). Los nombres de perfil de Instagram y Facebook traen emojis: «Kevin
+Belier 🐏» salía como «K�» (el emoji partido a la mitad) y «Vivir con virtud
+⚖️ 🌿» como «V⚖». Las iniciales son la primera letra o cifra de la primera y
+la última palabra que tengan alguna.
+
 **D5 — El compositor es uno por conversación** (añadido al implementar). Al
 cambiar de conversación se quedaban el borrador, el adjunto elegido y el panel
 de ubicación o contacto abierto: un archivo escogido para una persona podía
@@ -81,6 +87,7 @@ queda esperando.
 | `src/components/inbox/composer.tsx` | D1 |
 | `src/components/inbox/conversation-list.tsx` | D2 y D3 |
 | `src/components/inbox/inbox-client.tsx` | D5 |
+| `src/lib/utils.ts` (`initials`) | D7 |
 | `src/lib/channels.ts` (`navKicker`), `src/app/(app)/layout.tsx`, `app-shell.tsx`, `app-nav.tsx`, Ajustes → Marca | D6 |
 
 ## Pruebas

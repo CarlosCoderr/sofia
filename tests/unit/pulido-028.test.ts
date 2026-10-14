@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { CHANNEL_CAPABILITIES } from "@/server/channels/capabilities";
 import { channelList, emptyInboxDescription } from "@/components/inbox/helpers";
 import { navKicker } from "@/lib/channels";
+import { initials } from "@/lib/utils";
 
 /** 028 — Pulido visual de la 1.6. */
 
@@ -47,5 +48,21 @@ describe("la etiqueta bajo el logo (D6)", () => {
   it("con solo WhatsApp, la de siempre; con más canales, Multicanal", () => {
     expect(navKicker(["whatsapp"])).toBe("CRM · WhatsApp");
     expect(navKicker(["whatsapp", "instagram"])).toBe("CRM · Multicanal");
+  });
+});
+
+describe("las iniciales del avatar ignoran los emojis (D7)", () => {
+  it("nombres de redes con emojis", () => {
+    expect(initials("Kevin Belier 🐏")).toBe("KB");
+    expect(initials("Vivir con virtud ⚖️ 🌿")).toBe("VV");
+    expect(initials("🌿 Ana")).toBe("A");
+    expect(initials("🐏")).toBe("?");
+  });
+
+  it("los nombres de siempre no cambian", () => {
+    expect(initials("María López")).toBe("ML");
+    expect(initials("Ángel")).toBe("Á");
+    expect(initials("  ")).toBe("?");
+    expect(initials("5215512345678")).toBe("5");
   });
 });
