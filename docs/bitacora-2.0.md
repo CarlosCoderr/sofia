@@ -648,7 +648,7 @@ pendiente anotado en la 023: `webhook_secret` iba en claro desde la 014.
 `vocero-clase` ni el webhook de Zernio (la tarea lo pedía así). Receta para
 cuando Kevin lo autorice: desplegar en `vocero-clase` una imagen con este
 commit, buscar en su log `[boot] N secreto(s) de firma de Zernio cifrado(s)`
-(debería ser 2: Instagram y la página), y un DM real de `kevin.belier` a
+(uno por canal conectado por Zernio), y un DM real de `kevin.belier` a
 Instagram que entre con la firma verificada y reciba respuesta.
 
 ### Dónde vive cada cosa
