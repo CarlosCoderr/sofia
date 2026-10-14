@@ -65,6 +65,12 @@ cuál: «Anuncio · titular» en la lista, un filtro «Anuncios», y en el panel
 contacto el creativo, el texto y el enlace del anuncio. No pide bandera ni
 credenciales: el dato llega en el mismo webhook.
 
+En **Contactos** puedes **importar** una lista que ya tengas (un CSV con nombre
+y teléfono con código de país): ves qué va a entrar antes de crear nada, no
+duplica a nadie y no llena tu pipeline. Y puedes marcar contactos **«sin
+agente»** —al importar o uno por uno— para que a tus clientes de siempre los
+atiendas tú: sus mensajes llegan a la bandeja y el agente no les contesta.
+
 Una conversación se puede **eliminar** desde el panel del contacto (lo ve quien
 administra el negocio): se van los mensajes, sus adjuntos y lo que el agente
 aprendió en ella, y el contacto se queda en su etapa salvo que pidas borrarlo

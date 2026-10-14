@@ -4,7 +4,8 @@
 
 **Created**: 2026-10-13
 
-**Status**: Especificada antes de escribir código.
+**Status**: Especificada antes de escribir código. Implementada; gates y
+guiones E2E en verde.
 
 **Input**: sexta spec de la 1.6.0 (`PLAN-2.0.md`, aprobado por el dueño el
 2026-10-13). Puerto de Vocero Cloud #108 (`a6d1bdf`): `src/lib/contact-import.ts`,
@@ -53,6 +54,12 @@ que nunca casa con quien escriba después. Se guarda como lo guarda la ingesta
 **D4 — No duplica y no pisa.** A quien ya existía (por identidad o por
 teléfono) no se le duplica ni se le cambia el nombre: pudo editarlo el dueño.
 Importar dos veces el mismo archivo deja lo mismo que una.
+
+**D4b — El nombre del archivo es del dueño.** Queda como escrito a mano
+(`name_source = manual`): cuando el importado escriba, su nombre de perfil de
+WhatsApp no lo pisa. Un renglón sin nombre entra con el teléfono como nombre y
+sí toma el de WhatsApp en cuanto exista. (Añadido al implementar: el raíz
+distingue los dos orígenes del nombre y cloud no.)
 
 **D5 — No crea conversación ni lead.** Un hilo vacío ensuciaría la bandeja, y
 una lista importada no es un embudo: meterla al Pipeline lo llenaría de gente
