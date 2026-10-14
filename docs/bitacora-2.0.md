@@ -608,3 +608,58 @@ cookie del tema, como la app, no aparece.
 
 PR #103 (registro de llamadas al proveedor de IA), tag `v1.6.0` y starter
 2.2.0.
+
+## 2026-10-14 — 030: el secreto de firma de Zernio, cifrado en reposo
+
+PR #122, rama `feat/030-secreto-zernio-cifrado`. Ciclo completo: spec, plan y
+tareas antes del código (`fef4d36`); implementación en `1ebda1d`. Cierra el
+pendiente anotado en la 023: `webhook_secret` iba en claro desde la 014.
+
+### Qué quedó
+
+- Migración aditiva `0020_secreto_zernio_cifrado`: `webhook_secret_cipher`,
+  `_iv` y `_tag`, nulas, en `instagram_credentials`, `messenger_credentials`
+  y `tiktok_credentials`. Mismo AES-256-GCM y misma `ENCRYPTION_KEY` que el
+  token.
+- Una sola puerta de escritura (`columnasDelSecreto`) y una de lectura
+  (`secretoDeLaFila`, con la columna vieja de respaldo) en
+  `src/server/zernio/secreto-guardado.ts`.
+- **La migración de datos corre al arrancar la app** (`instrumentation-node.ts`),
+  no en `migrate.mjs` ni en SQL: necesita la clave validada y el mismo
+  `encryptSecret`, y así corre también en `next dev`. Re-ejecutable, no pisa
+  un secreto guardado a la vez y nunca tumba el arranque (spec, D3–D5).
+- `webhook_secret` queda obsoleta y nula. Se quita en una versión mayor que
+  pida pasar antes por la 1.6 (D6).
+
+### Cómo se probó
+
+| Qué | Resultado |
+|---|---|
+| Gates (typecheck, lint, unitarias, build) | Verdes con banderas apagadas y con `CHANNELS` + `AGENDA`; 1,145 unitarias (13 nuevas) |
+| `e2e-canales` (base nueva) | 76/76: tres checks nuevos leen la base y ninguna fila trae el secreto |
+| `e2e-messenger` · `e2e-tiktok` | 42/42 · 52/52 |
+| `e2e-despacho` con cerebro · con el agente incluido | 94/94 · 14/14 |
+| Actualización | Base nueva en `0019` sembrada con el código de `main` (3 secretos en claro, de 48 caracteres). Con la rama: `0020`, arranque con `[boot] 3 secreto(s) de firma de Zernio cifrado(s) en reposo`, columna vieja nula, la fila no contiene el secreto, firma con el secreto de antes → 200 y con uno ajeno → 401 en los tres canales; segundo arranque sin log; `e2e-canales` 76/76 sobre esa base |
+| Bases de esta corrida | Ninguna con `webhook_secret` no nulo |
+
+### En vivo
+
+**Pendiente de verificación humana.** No se tocó Coolify, la instancia
+`vocero-clase` ni el webhook de Zernio (la tarea lo pedía así). Receta para
+cuando Kevin lo autorice: desplegar en `vocero-clase` una imagen con este
+commit, buscar en su log `[boot] N secreto(s) de firma de Zernio cifrado(s)`
+(debería ser 2: Instagram y la página), y un DM real de `kevin.belier` a
+Instagram que entre con la firma verificada y reciba respuesta.
+
+### Dónde vive cada cosa
+
+| Qué | Dónde |
+|---|---|
+| Secreto de firma de Zernio | Cifrado en `webhook_secret_{cipher,iv,tag}` de cada canal y en el webhook de Zernio. Nunca en una respuesta ni en el log |
+| Local | Bases `vocero_030_actualiza`, `vocero_030_canales`, `vocero_030_cerebro`, `vocero_030_incluido` en el Postgres propio (5433); `.env.e2e-030-*` en el clon, ignorados por git |
+| Guion de la actualización | `actualiza-030.mjs` en el scratchpad de la sesión, fuera del repo; guarda los secretos de prueba (del simulador) en un archivo, nunca en pantalla |
+
+### Qué sigue
+
+Lo que diga el plan: PR #103, tag `v1.6.0` y starter 2.2.0. La prueba en vivo
+de esta spec puede ir en el mismo despliegue del `rc` siguiente.
