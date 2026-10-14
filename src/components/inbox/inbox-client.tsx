@@ -322,12 +322,19 @@ export function InboxClient({ channels }: { channels: readonly Channel[] }) {
                       "mt-0.5 font-mono text-[10.5px] tracking-[0.04em]",
                       selected.windowOpen
                         ? "font-medium text-success-text"
-                        : "text-text-3"
+                        : selected.humanWindow?.open
+                          ? "font-medium text-info-text"
+                          : "text-text-3"
                     )}
                   >
                     {selected.windowOpen
                       ? "ventana abierta"
-                      : selected.contact.phone
+                      : selected.humanWindow?.open
+                        ? // 024: pasadas 24 h en Instagram o Messenger solo
+                          // contesta una persona. No se llama «atención
+                          // humana»: eso ya es el traspaso, con la IA en pausa.
+                          "ventana humana"
+                        : selected.contact.phone
                         ? formatPhone(selected.contact.phone)
                         : // Instagram no tiene teléfono: decir "Sin teléfono"
                           // sería contestar una pregunta que nadie hizo.

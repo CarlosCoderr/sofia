@@ -21,6 +21,23 @@ instalación que no toque sus variables.
   cuenta Business de prueba está en revisión.
 - **Migración `0018_canal_tiktok`**: crea la tabla `tiktok_credentials`.
   Aditiva; corre sola al arrancar y queda vacía si no usas el canal.
+- **En Instagram, Messenger y TikTok el agente ya no escribe con asteriscos**
+  (024). El agente incluido y los cerebros externos marcan negritas como en
+  WhatsApp; esas redes no las dibujan y el cliente veía `*así*`. Ahora el
+  texto de la IA sale plano en esos canales: sin marcas, con `•` en las listas
+  y los enlaces como `texto: URL`. WhatsApp no cambia, y lo que escribe una
+  persona en la bandeja tampoco.
+- **Ventana humana en Instagram y Messenger** (024). Pasadas 24 horas del
+  último mensaje del cliente la bandeja ya no esconde el cuadro de texto ni
+  pide una plantilla que esos canales no tienen: una persona puede contestar
+  hasta 7 días (sale con la etiqueta de agente humano de Meta) y la bandeja
+  dice cuánto queda. Pasados los 7 días lo explica en vez de dejar que Meta
+  rechace el envío.
+- **La IA deja de usar esa etiqueta.** Entre 24 horas y 7 días, en Instagram
+  y Messenger, `POST /api/bot/messages` responde 409 `window_closed` (antes
+  enviaba con la etiqueta, que Meta reserva a personas). Es lo que ya decían
+  `windowOpen` y el contrato del despacho; el agente incluido pasa la
+  conversación a una persona, como en WhatsApp.
 - **Instagram ya tiene pantalla** (023): Configuración → Instagram. Antes el
   canal solo se podía conectar llamando a la API a mano.
 - **Conectar por Zernio es pegar la llave** (023), en Instagram, Messenger y

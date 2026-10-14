@@ -4,7 +4,8 @@
 
 **Created**: 2026-10-13
 
-**Status**: Especificada antes de escribir código.
+**Status**: Especificada antes de escribir código. Implementada; gates y
+guiones E2E en verde.
 
 **Input**: cuarta spec de la 1.6.0 (`PLAN-2.0.md`, aprobado por el dueño el
 2026-10-13). Puerto de las specs 110 y 115 de megaparty-crm
@@ -67,10 +68,15 @@ cliente. El agente incluido, al topar con `window_closed`, pasa la
 conversación a una persona como ya hace en WhatsApp (motivo «ventana»).
 
 **D4 — La bandeja lo enseña.** En Instagram y Messenger, entre 24 horas y 7
-días el cuadro de texto sigue ahí, con un aviso de **atención humana** y el
-tiempo que queda; el encabezado dice «atención humana» en vez de «ventana
-abierta». Pasados los 7 días se explica que hay que esperar al cliente, sin
-ofrecer plantillas (no existen en ese canal).
+días el cuadro de texto sigue ahí, con un aviso de que solo puede contestar
+una persona y el tiempo que queda; el encabezado dice «ventana humana» en vez
+de «ventana abierta». Pasados los 7 días se explica que hay que esperar al
+cliente, sin ofrecer plantillas (no existen en ese canal).
+
+Se llama «ventana humana» y no «atención humana», que es como el plan la
+nombraba: en la bandeja «Atención humana» ya es otra cosa (el traspaso a una
+persona, con la IA en pausa), y dos estados distintos con el mismo nombre se
+confunden.
 
 ## Fuera de alcance
 
