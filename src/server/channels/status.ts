@@ -14,6 +14,7 @@ import {
 import {
   accountHealth,
   fetchZernioAccounts,
+  zernioAccountName,
   type Health,
   type ZernioAccount,
 } from "@/server/zernio/cuentas";
@@ -141,13 +142,17 @@ export async function channelsStatus(organizationId: string): Promise<ChannelSta
 
     const conn = zernio.find((c) => c.channel === channel);
     if (conn) {
+      const lectura = lecturas.get(conn.token) ?? null;
+      // Una conexión guardada antes de la 1.6 puede no tener nombre (Messenger
+      // por Zernio no lo pedía): se enseña el que tiene Zernio ahora.
+      const enZernio = lectura?.accounts.find((a) => a._id === conn.accountRef);
       filas.push({
         ...base,
         connected: true,
         source: "zernio",
-        account: conn.name,
+        account: conn.name ?? (enZernio ? zernioAccountName(enZernio) : null),
         status: conn.status,
-        health: saludDe(conn, lecturas.get(conn.token) ?? null),
+        health: saludDe(conn, lectura),
       });
       continue;
     }

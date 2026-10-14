@@ -5,7 +5,9 @@
 **Created**: 2026-10-13
 
 **Status**: Especificada antes de escribir código. Implementada; gates y
-guiones E2E en verde.
+guiones E2E en verde. Probada en vivo contra Zernio real con la imagen
+`1.6.0-rc.1` (bitácora). **Pendiente de verificación humana:** un mensaje
+directo real a Instagram y otro a la página con esa imagen.
 
 **Input**: tercera spec de la 1.6.0 (`PLAN-2.0.md`, aprobado por el dueño el
 2026-10-13). Puerto de cuatro arreglos que megaparty-crm ya probó con un
