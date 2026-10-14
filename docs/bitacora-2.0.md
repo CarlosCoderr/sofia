@@ -540,3 +540,35 @@ Tag `v1.6.0-rc.4` sobre `92670ff`; la instancia lo corre desde el 2026-10-14
 
 Que el agente no se quede callado ante un saludo; después la 028 (pulido
 visual).
+
+## 2026-10-14 — 029: el agente no se queda callado ante un saludo
+
+PR #120. Carril ligero: solo el prompt del agente incluido y una línea del
+turno. Hallazgo de la prueba en vivo de la 027.
+
+### Qué se probó
+
+| Qué | Resultado |
+|---|---|
+| Reproducción fuera de la app (`ops/repro-saludo.mjs`: prompt, perfil, conocimiento y modelo `gpt-4o-mini` de `vocero-clase`, 8 vueltas, reintentos como `chatJson`) | Prompt de `main`: 22 mensajes sin respuesta («Hola prueba 1» 8/8, «prueba» 6/8) y reintento en todo turno con historial. Prompt nuevo: 0 y 0 |
+| `pnpm eval:silencios` (nuevo; negocio de ejemplo, 6 vueltas) | 0 de 42 sin respuesta y 0 reintentos con `openai/gpt-4o-mini` y con `anthropic/claude-sonnet-4.5`; los cierres siguen en silencio |
+| Gates (typecheck, lint, unitarias, build) | Verde; 1,124 unitarias (8 nuevas) |
+| `e2e-selftest` · `e2e-importar` · `e2e-despacho` (agente incluido) · `e2e-ventana-social` | 213/213 · 37/37 · 14/14 · 53/53 |
+
+La medición gasta centavos de OpenRouter con la llave de la bóveda
+(`LLM_API_KEY`), que `ops/eval-silencios.mjs` pasa por entorno, nunca por argv.
+
+### En vivo (instancia `vocero-clase`, imagen `1.6.0-rc.5`)
+
+Tag `v1.6.0-rc.5` sobre `03e8431`; deploy `to2cjrg4b08d1u2q06ddjqbf` de la app
+`3jinuviignszpotzzmvs6nrf`, `/api/health` con ese commit. Un solo «Hola prueba
+2» desde la línea cliente (Evolution) al número Soporte: el agente contestó en
+12 s. Con `rc.4`, «Hola prueba 1» se había quedado sin respuesta.
+
+**Cierra la 024:** los DMs de Kevin con «¿qué servicios ofrecen y cuánto
+cuestan?» a Instagram y a la página (03:49 UTC, `rc.4`) recibieron respuesta
+del agente en unos 14 s, sin asteriscos.
+
+### Qué sigue
+
+La 028 (pulido visual).

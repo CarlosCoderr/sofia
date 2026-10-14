@@ -6,8 +6,8 @@
 
 **Status**: Especificada antes de escribir código. Implementada; gates y
 guiones E2E en verde. En vivo con la imagen `1.6.0-rc.2` (bitácora).
-**Pendiente de verificación humana:** una respuesta del agente con negritas
-llegando sin asteriscos a Instagram y a Messenger.
+Verificado por Kevin el 2026-10-14 (imagen `rc.4`): sus DMs con una pregunta a
+Instagram y a la página recibieron respuesta del agente, sin asteriscos.
 
 **Input**: cuarta spec de la 1.6.0 (`PLAN-2.0.md`, aprobado por el dueño el
 2026-10-13). Puerto de las specs 110 y 115 de megaparty-crm
