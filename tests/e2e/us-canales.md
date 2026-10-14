@@ -82,6 +82,13 @@ node --env-file=.env scripts/e2e-canales.mjs
 23. Con Zernio caído la pantalla carga y lo dice, sin inventar un «todo bien».
 24. TikTok ya Business: al reconectar deja de avisar y los tres quedan sanos.
 
+## 030 — El secreto en reposo
+
+25. Al final, en la base: ninguna fila de `instagram_credentials`,
+    `messenger_credentials` ni `tiktok_credentials` tiene `webhook_secret`;
+    las de Zernio tienen `webhook_secret_{cipher,iv,tag}`, y ninguna fila
+    contiene el secreto del webhook como texto.
+
 ## Interfaz (a mano, claro y oscuro)
 
 - **Configuración → Estado**: el distintivo de cada canal dice lo peor que le

@@ -5,7 +5,8 @@
  * y TikTok como lo haría el propietario desde las pantallas, y comprueba que
  * la cuenta se resuelve contra la llave, que el webhook queda dado de alta y
  * limitado a las cuentas, que la firma se exige con el secreto que tenga
- * Zernio y que la pantalla de estado dice la verdad.
+ * Zernio y que la pantalla de estado dice la verdad. 030 — y que en la base
+ * el secreto de firma va cifrado, nunca en claro (necesita DATABASE_URL).
  *
  * Uso:
  *   1) app corriendo (`next dev`) sobre una base migrada, con CHANNELS que
@@ -16,6 +17,7 @@
  * Sale con código 1 si algún check falla. Guion: tests/e2e/us-canales.md.
  */
 import { createHmac } from "node:crypto";
+import postgres from "postgres";
 
 const BASE = process.env.APP_BASE_URL ?? "http://localhost:3000";
 const VERIFY_TOKEN = process.env.META_WEBHOOK_VERIFY_TOKEN ?? "";
@@ -249,9 +251,46 @@ async function main() {
     await autocuracion(secreto);
     await pantallaDeEstado(secreto);
   }
+  await enReposo(secreto);
 
   console.log(`\n${checks - failures}/${checks} checks en verde`);
   process.exit(failures > 0 ? 1 : 0);
+}
+
+// ---------------------------------------------------------------------------
+// 030 — En la base el secreto va cifrado
+// ---------------------------------------------------------------------------
+
+/**
+ * Tras conectar, firmar, reparar y reconectar: ninguna fila de las tres tablas
+ * guarda el secreto en claro, y las de Zernio lo tienen cifrado. Se mira la
+ * fila entera como texto, como la unitaria del token.
+ */
+async function enReposo(S) {
+  console.log("\n== 030: el secreto en reposo ==");
+  if (!process.env.DATABASE_URL) {
+    ok("DATABASE_URL para leer la base", false);
+    return;
+  }
+  const sql = postgres(process.env.DATABASE_URL, { max: 1, onnotice: () => {} });
+  try {
+    for (const tabla of ["instagram_credentials", "messenger_credentials", "tiktok_credentials"]) {
+      const [f] = await sql`
+        select
+          count(*) filter (where webhook_secret is not null)::int as en_claro,
+          count(*) filter (where source = 'zernio' and (webhook_secret_cipher is null
+            or webhook_secret_iv is null or webhook_secret_tag is null))::int as sin_cifrar,
+          count(*) filter (where ${S ?? "∅"}::text <> '' and t::text like '%' || ${S ?? "∅"}::text || '%')::int as con_el_secreto
+        from ${sql(tabla)} t`;
+      ok(
+        `${tabla}: sin secreto en claro, cifrado en las de Zernio, y la fila no lo contiene`,
+        f.en_claro === 0 && f.sin_cifrar === 0 && f.con_el_secreto === 0,
+        JSON.stringify(f)
+      );
+    }
+  } finally {
+    await sql.end();
+  }
 }
 
 // ---------------------------------------------------------------------------

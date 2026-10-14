@@ -141,6 +141,13 @@
       "when": 1791947815503,
       "tag": "0019_contact_ai_paused",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1791987903930,
+      "tag": "0020_secreto_zernio_cifrado",
+      "breakpoints": true
     }
   ]
 }
