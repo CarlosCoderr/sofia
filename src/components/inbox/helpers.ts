@@ -53,6 +53,23 @@ export function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+/**
+ * 028 — Los canales en una frase: «WhatsApp», «WhatsApp o Instagram»,
+ * «WhatsApp, Instagram o Messenger».
+ */
+export function channelList(labels: readonly string[]): string {
+  if (labels.length <= 1) return labels[0] ?? "";
+  return `${labels.slice(0, -1).join(", ")} o ${labels[labels.length - 1]}`;
+}
+
+/** 028 — El texto de la bandeja vacía, con los canales encendidos. */
+export function emptyInboxDescription(labels: readonly string[]): string {
+  if (labels.length <= 1) {
+    return "Cuando alguien escriba a tu número de WhatsApp, su conversación aparecerá aquí en tiempo real.";
+  }
+  return `Cuando alguien te escriba por ${channelList(labels)}, su conversación aparecerá aquí en tiempo real.`;
+}
+
 export function previewText(preview: string | null): string {
   if (!preview) return "";
   return MEDIA_LABELS[preview] ? `📎 ${MEDIA_LABELS[preview]}` : preview;

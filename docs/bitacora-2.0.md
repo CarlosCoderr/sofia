@@ -571,4 +571,40 @@ del agente en unos 14 s, sin asteriscos.
 
 ### Qué sigue
 
-La 028 (pulido visual).
+La 028 (pulido visual), ya en la entrada siguiente.
+
+## 2026-10-14 — 028: pulido visual de la bandeja multicanal
+
+PR #121. Carril ligero: interfaz y un campo en el DTO de la bandeja. Dos de los
+tres puntos del plan ya existían (filtro por canal desde la 014, distintivo de
+TikTok desde la 022); la spec 214 de cloud que el plan citaba no está en el
+clon. Kevin no mandó lista propia: si la manda, va en una spec aparte (D4).
+
+### Qué se probó
+
+| Qué | Resultado |
+|---|---|
+| Gates (typecheck, lint, unitarias, build) | Verde; 1,132 unitarias (`pulido-028.test.ts`; contraste de temas en verde) |
+| `e2e-selftest` · `e2e-ventana-social` (4 checks nuevos del compositor por canal) · `e2e-responsive` | 213/213 · 57/57 · verde |
+| Capturas con Playwright, claro y oscuro | Compositor en WhatsApp y en Instagram (borrador y panel abiertos no pasan de una conversación a otra); bandeja vacía con cuatro canales; filtro de Instagram sin conversaciones. Consola limpia |
+
+El «1 Issue» del overlay de Next en oscuro (visto ya en la 027) era del guion
+de capturas, que fijaba el tema en el `<html>` antes de hidratar; con la
+cookie del tema, como la app, no aparece.
+
+### En vivo (instancia `vocero-clase`)
+
+- `v1.6.0-rc.6` sobre `30288cb` (deploy `oenqkhduvc1bjt6jorb27gnz`) y
+  `v1.6.0-rc.7` sobre `c0b97da` (deploy `f3jt8mfkg6rdnirdxmolidq8`), app
+  `3jinuviignszpotzzmvs6nrf`.
+- `ops/vivo-028.mjs` (solo lee, con la sesión del dueño): el DTO y la pantalla
+  de WhatsApp traen clip, ubicación y contacto, y la de Instagram la caja sola;
+  menú «CRM · Multicanal» y pestaña «CRM multicanal», en los dos temas.
+- La captura en vivo enseñó un defecto que el entorno local no tenía: los
+  avatares de nombres con emoji («Kevin Belier 🐏» → «K�»). Arreglado en
+  `rc.7` (D7) y comprobado en la misma instancia.
+
+### Qué sigue
+
+PR #103 (registro de llamadas al proveedor de IA), tag `v1.6.0` y starter
+2.2.0.

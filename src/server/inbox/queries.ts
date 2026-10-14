@@ -153,9 +153,10 @@ export function serializeConversation(
   stageName: string | null = null,
   anuncio: ConversationDto["anuncio"] = null
 ): ConversationDto {
+  const caps = capabilitiesFor(c.channel);
   // 024: la extensión humana solo existe en los canales que la declaran.
   const reply =
-    capabilitiesFor(c.channel).humanAgentWindowMs !== null
+    caps.humanAgentWindowMs !== null
       ? replyWindow(c.channel, c.lastInboundAt)
       : null;
   return {
@@ -179,6 +180,7 @@ export function serializeConversation(
     humanWindow: reply
       ? { open: reply.humanAgentTag, remainingMs: reply.humanAgentTag ? reply.operatorRemainingMs : 0 }
       : null,
+    composer: { media: caps.outboundMedia, structured: caps.structuredMessages },
     preview,
     anuncio,
   };

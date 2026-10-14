@@ -402,6 +402,9 @@ export function InboxClient({
             </header>
             <MessageThread messages={thread} />
             <Composer
+              // 028: uno por conversación. Sin la llave, el borrador, el adjunto
+              // elegido y el panel abierto pasaban a la siguiente conversación.
+              key={selected.id}
               conversation={selected}
               onSend={sendText}
               onSent={() => {

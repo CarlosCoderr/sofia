@@ -55,6 +55,11 @@ export type ChannelCapabilities = {
   /** ¿Se pueden mandar adjuntos por este canal hoy? */
   outboundMedia: boolean;
   /**
+   * 028 — ¿Admite ubicación y contactos? Son mensajes de WhatsApp: en los
+   * demás canales el compositor ni los ofrece.
+   */
+  structuredMessages: boolean;
+  /**
    * ¿El estado del mensaje avanza por webhook (entregado/leído)? Si no, la
    * aceptación de la plataforma es la confirmación y el mensaje nace `sent`
    * — sin esto se queda con el reloj puesto para siempre.
@@ -78,6 +83,7 @@ export const CHANNEL_CAPABILITIES: Record<Channel, ChannelCapabilities> = {
     maxTextChars: 4096,
     maxOutboundPerWindow: null,
     outboundMedia: true,
+    structuredMessages: true,
     deliveryReceipts: true,
   },
   instagram: {
@@ -92,6 +98,7 @@ export const CHANNEL_CAPABILITIES: Record<Channel, ChannelCapabilities> = {
     maxTextChars: null,
     maxOutboundPerWindow: null,
     outboundMedia: false,
+    structuredMessages: false,
     deliveryReceipts: false,
   },
   // 017: Messenger comparte la plataforma de mensajería de Meta con Instagram
@@ -108,6 +115,7 @@ export const CHANNEL_CAPABILITIES: Record<Channel, ChannelCapabilities> = {
     maxTextChars: null,
     maxOutboundPerWindow: null,
     outboundMedia: false,
+    structuredMessages: false,
     deliveryReceipts: false,
   },
   /**
@@ -127,6 +135,7 @@ export const CHANNEL_CAPABILITIES: Record<Channel, ChannelCapabilities> = {
     maxTextChars: 6000,
     maxOutboundPerWindow: 10,
     outboundMedia: false,
+    structuredMessages: false,
     deliveryReceipts: false,
   },
 };
