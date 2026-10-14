@@ -2,6 +2,7 @@ import { and, desc, eq, gt, sql } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
 import { scoped } from "@/lib/db/tenant";
 import { isWindowOpen, windowRemainingMs } from "@/server/inbox/window";
+import { windowMsFor } from "@/server/channels/capabilities";
 import type { ConversationDto } from "@/lib/types";
 
 /**
@@ -163,8 +164,13 @@ export function serializeConversation(
     lastInboundAt: c.lastInboundAt?.toISOString() ?? null,
     lastMessageAt: c.lastMessageAt?.toISOString() ?? null,
     unreadCount: c.unreadCount,
-    windowOpen: isWindowOpen(c.lastInboundAt),
-    windowRemainingMs: windowRemainingMs(c.lastInboundAt),
+    // 022: la ventana es la del canal (48 h en TikTok, 24 en los demás).
+    windowOpen: isWindowOpen(c.lastInboundAt, new Date(), windowMsFor(c.channel)),
+    windowRemainingMs: windowRemainingMs(
+      c.lastInboundAt,
+      new Date(),
+      windowMsFor(c.channel)
+    ),
     preview,
     anuncio,
   };

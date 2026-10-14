@@ -115,8 +115,10 @@ cualquier otra conversación.
 | `GET /api/bot/availability` | Con la agenda encendida: los horarios para ofrecer, que quedan registrados como ofrecidos. Con `date=AAAA-MM-DD`, todas las horas libres de ese día; `query` dice hasta dónde llega lo consultado |
 | `POST` · `PATCH /api/bot/bookings` | Con la agenda encendida: reservar (201) o mover (200) una cita, solo en un horario que se ofreció |
 
-Los 409 vienen tipados (`ai_paused`, `window_closed`, `sandbox_violation`) para
-que tu bot sepa si callarse, mandar plantilla o rendirse. El guion de pruebas
+Los 409 vienen tipados (`ai_paused`, `window_closed`, `sandbox_violation`,
+`message_limit`) para que tu bot sepa si callarse, mandar plantilla o rendirse.
+`message_limit` significa que el canal no admite más mensajes hasta que el
+cliente vuelva a escribir (hoy, el tope de 10 de TikTok): no reintentes. El guion de pruebas
 está en [`tests/e2e/us-bot-api.md`](tests/e2e/us-bot-api.md).
 
 La API primero revisa la llave y después cuenta: con la llave buena caben 1200
@@ -471,7 +473,7 @@ del cliente se conecta con el **override de callback por WABA**:
 > Graph** (botón "Sincronizar" en Configuración → Plantillas), así el modo
 > agencia ve las aprobaciones igual.
 
-## Canales opcionales: Instagram y Messenger
+## Canales opcionales: Instagram, Messenger y TikTok
 
 WhatsApp es el canal por el que existe Vocero y siempre está encendido. Los
 demás viajan en el mismo código, **apagados por defecto** ([ADR-001](docs/adr-001-canales-opcionales.md)):
@@ -479,7 +481,7 @@ una instancia que no los usa no ve pantallas, webhooks ni variables suyas.
 Se encienden con una variable de despliegue:
 
 ```bash
-CHANNELS=whatsapp,instagram,messenger   # los que quieras; whatsapp siempre va
+CHANNELS=whatsapp,instagram,messenger,tiktok   # los que quieras; whatsapp siempre va
 ```
 
 Con más de un canal encendido, la Bandeja enseña el distintivo de cada
@@ -532,6 +534,34 @@ negocio como tester) o [Zernio](https://zernio.com) como API unificada. La
 conexión se guarda por la API de ajustes (`PUT /api/settings/instagram`) y el
 webhook vive en `/api/webhooks/ig/<token>`. El detalle está en
 [`specs/014-canal-instagram`](specs/014-canal-instagram/spec.md).
+
+### TikTok (mensajes directos de una cuenta de negocio)
+
+TikTok no entrega mensajes a una app propia: llegan por
+[Zernio](https://zernio.com), con tu cuenta de Zernio.
+
+1. En Zernio conecta tu cuenta de TikTok y copia su `accountId`; crea una API
+   key y, si quieres verificar la firma, un secreto de webhook.
+2. En Vocero, **Configuración → TikTok**: pega el `accountId`, la API key y el
+   secreto. La llave se prueba antes de guardar y queda cifrada.
+3. En Zernio da de alta el webhook que enseña esa pantalla, con el evento
+   `message.received`. Si ya tienes uno para Instagram o Messenger, sirve el
+   mismo: Zernio entrega todas las cuentas por un webhook y Vocero reparte por
+   plataforma.
+
+Lo que TikTok impone, y Vocero te dice antes de que lo descubras con un
+mensaje rechazado:
+
+- La cuenta tiene que ser **TikTok Business**, registrada fuera de la Unión
+  Europea, Suiza y Reino Unido, con los mensajes directos abiertos.
+- **Tú no inicias**: solo contestas a quien te escribió.
+- Tras el último mensaje del cliente puedes mandar **hasta 10 mensajes, en 48
+  horas**. No hay plantilla que reabra: el undécimo se rechaza (409
+  `message_limit`) hasta que el cliente vuelva a escribir.
+- Cada mensaje es texto, de hasta 6,000 caracteres. Las imágenes entran (como
+  aviso de que llegó una), pero todavía no se envían desde Vocero.
+
+El detalle está en [`specs/022-canal-tiktok`](specs/022-canal-tiktok/spec.md).
 
 ## Configuración de la IA
 
@@ -704,7 +734,7 @@ que dice qué trae cada versión y qué hacer para actualizar. Al crear el tag
 Las versiones 1.5 y 2.0 tienen plan propio:
 [docs/plan-1.5-y-2.0.md](docs/plan-1.5-y-2.0.md).
 
-- Adjuntos en Instagram y Messenger (hoy esos canales son de texto; en
+- Adjuntos en Instagram, Messenger y TikTok (hoy esos canales son de texto; en
   WhatsApp ya van y vienen con vista previa).
 - RAG para knowledge bases grandes (hoy: se inyecta completo con aviso de tamaño).
 - Personas configurables del Laboratorio y comparativas entre corridas.

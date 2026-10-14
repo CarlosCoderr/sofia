@@ -13,7 +13,8 @@ import {
   type ResultadoEntrega,
 } from "@/server/brains/contract";
 import type { FilaDespacho } from "@/server/dispatch/outbox";
-import { WINDOW_MS, isWindowOpen } from "@/server/inbox/window";
+import { isWindowOpen, windowExpiresAt } from "@/server/inbox/window";
+import { windowMsFor } from "@/server/channels/capabilities";
 
 /**
  * 021 — Entrega de un despacho al cerebro: leer la ráfaga, armar el evento y
@@ -236,10 +237,16 @@ export async function construirEvento(
       id: conv.id,
       channel: conv.channel,
       aiEnabled: conv.aiEnabled,
-      windowOpen: isWindowOpen(conv.lastInboundAt),
-      windowExpiresAt: conv.lastInboundAt
-        ? new Date(conv.lastInboundAt.getTime() + WINDOW_MS)
-        : null,
+      // 022: la ventana es la del canal (48 h en TikTok).
+      windowOpen: isWindowOpen(
+        conv.lastInboundAt,
+        new Date(),
+        windowMsFor(conv.channel)
+      ),
+      windowExpiresAt: windowExpiresAt(
+        conv.lastInboundAt,
+        windowMsFor(conv.channel)
+      ),
     },
     contact: {
       id: contact.id,

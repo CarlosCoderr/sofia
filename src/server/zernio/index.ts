@@ -67,6 +67,8 @@ export type ZernioEvent = {
      * listado o de aquí. No se parsea ni se compara con el de la plataforma.
      */
     conversationId?: string;
+    /** 022: la plataforma también viene en el mensaje, no solo en la cuenta. */
+    platform?: string;
     direction?: string;
     text?: string | null;
     /** Cuándo lo mandó la persona, ISO-8601. Ver `zernioSentAtSeconds`. */
@@ -74,7 +76,9 @@ export type ZernioEvent = {
     attachments?: { type?: string; url?: string }[];
     sender?: { id?: string; name?: string | null; username?: string | null };
   };
-  account?: { id?: string; platform?: string };
+  /** 022: el hilo también viene aparte; su `id` es el `conversationId`. */
+  conversation?: { id?: string };
+  account?: { id?: string; accountId?: string; platform?: string };
 };
 
 /**
@@ -164,7 +168,11 @@ export async function sendZernioMessage(input: {
     }
   );
 
+  // La API responde `{ success, data: { messageId } }`. Las otras dos formas
+  // son las que se leían antes de la 022 y se conservan por si acaso; sin
+  // ninguna, un id propio para que el mensaje no se quede sin referencia.
   const id =
+    (res as { data?: { messageId?: string } }).data?.messageId ??
     (res as { message?: { id?: string }; id?: string }).message?.id ??
     (res as { id?: string }).id ??
     `zernio_${Date.now()}`;

@@ -197,6 +197,26 @@ export function Composer({
     onSent();
   }
 
+  // 022 — TikTok no tiene plantillas ni otra forma de reabrir: con la ventana
+  // cerrada no hay nada que ofrecer, solo decir qué pasa y qué lo arregla.
+  if (!conversation.windowOpen && conversation.channel === "tiktok") {
+    return (
+      <div className="border-t bg-background px-[18px] py-3.5">
+        <div className="flex items-start gap-2 rounded-md border border-warning-soft bg-warning-tint p-3 text-sm text-warning-text">
+          <Clock3 className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.7} />
+          <div>
+            <p className="font-medium">La ventana de 48 horas de TikTok está cerrada.</p>
+            <p className="opacity-80">
+              TikTok solo deja contestar dentro de las 48 horas siguientes al
+              último mensaje del cliente, y no permite reabrir la conversación.
+              Podrás escribirle cuando vuelva a mandar un mensaje.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!conversation.windowOpen) {
     return (
       <div className="border-t bg-background px-[18px] py-3.5">

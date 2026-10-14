@@ -103,15 +103,19 @@ export function settingsSections({
   agenda = false,
   atribucion = false,
   messenger = false,
+  tiktok = false,
 }: {
   agenda?: boolean;
   /** 016 — "Anuncios" existe solo con la bandera ATRIBUCION. */
   atribucion?: boolean;
   /** 017 — "Messenger" solo si el canal está encendido con CHANNELS. */
   messenger?: boolean;
+  /** 022 — "TikTok", igual: solo con el canal en CHANNELS. */
+  tiktok?: boolean;
 }): SettingsSection[] {
   const canales: SettingsLink[] = [{ href: "/settings/whatsapp", label: "WhatsApp" }];
   if (messenger) canales.push({ href: "/settings/messenger", label: "Messenger" });
+  if (tiktok) canales.push({ href: "/settings/tiktok", label: "TikTok" });
 
   // #85 — el proveedor de IA se configura aquí; el entorno queda de respaldo.
   const agente: SettingsLink[] = [{ href: "/settings/ai", label: "IA" }];
