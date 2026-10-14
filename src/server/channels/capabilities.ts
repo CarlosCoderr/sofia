@@ -28,6 +28,17 @@ export type ChannelCapabilities = {
   windowMs: number | null;
   /** Qué se puede hacer cuando la ventana está cerrada. */
   outsideWindow: OutsideWindowStrategy;
+  /**
+   * 024 — Hasta cuándo puede contestar una PERSONA con la etiqueta de agente
+   * humano, en ms desde el último entrante. null = el canal no tiene esa
+   * extensión. La IA nunca la usa: Meta la reserva a personas.
+   */
+  humanAgentWindowMs: number | null;
+  /**
+   * 024 — Qué formato de texto dibuja el canal. `plain`: ninguno, así que al
+   * texto de la IA se le quitan las marcas antes de enviarlo.
+   */
+  textFormat: "whatsapp" | "plain";
   /** Límite de texto en BYTES (no caracteres); null = sin límite práctico. */
   maxTextBytes: number | null;
   /**
@@ -58,6 +69,8 @@ export const CHANNEL_CAPABILITIES: Record<Channel, ChannelCapabilities> = {
     label: CHANNEL_LABEL.whatsapp,
     windowMs: DAY_MS,
     outsideWindow: "template",
+    humanAgentWindowMs: null,
+    textFormat: "whatsapp",
     maxTextBytes: null,
     // 022: el límite de Meta para un texto. Antes vivía como un tope global en
     // el esquema de la API, igual para todos los canales; ahora que un canal
@@ -71,6 +84,8 @@ export const CHANNEL_CAPABILITIES: Record<Channel, ChannelCapabilities> = {
     label: CHANNEL_LABEL.instagram,
     windowMs: DAY_MS,
     outsideWindow: "human_agent_tag",
+    humanAgentWindowMs: 7 * DAY_MS,
+    textFormat: "plain",
     // Meta corta en 1000 bytes: con acentos y emojis el margen real es menor
     // de lo que aparenta al contar caracteres.
     maxTextBytes: 1000,
@@ -87,6 +102,8 @@ export const CHANNEL_CAPABILITIES: Record<Channel, ChannelCapabilities> = {
     label: CHANNEL_LABEL.messenger,
     windowMs: DAY_MS,
     outsideWindow: "human_agent_tag",
+    humanAgentWindowMs: 7 * DAY_MS,
+    textFormat: "plain",
     maxTextBytes: 2000,
     maxTextChars: null,
     maxOutboundPerWindow: null,
@@ -104,6 +121,8 @@ export const CHANNEL_CAPABILITIES: Record<Channel, ChannelCapabilities> = {
     label: CHANNEL_LABEL.tiktok,
     windowMs: 2 * DAY_MS,
     outsideWindow: "none",
+    humanAgentWindowMs: null,
+    textFormat: "plain",
     maxTextBytes: null,
     maxTextChars: 6000,
     maxOutboundPerWindow: 10,
@@ -131,12 +150,25 @@ export function windowClosedMessage(channel: Channel): string {
     case "template":
       return "La ventana de 24 horas está cerrada; usa una plantilla aprobada";
     case "human_agent_tag":
-      // No se le pide nada al operador: el envío sale etiquetado solo.
-      return "";
+      // 024: dentro de la extensión el envío sale etiquetado solo y no se le
+      // pide nada al operador; este mensaje es para cuando también venció.
+      return `La ventana de atención de ${caps.label} está cerrada: solo se puede contestar hasta ${dias(caps.humanAgentWindowMs)} después del último mensaje del cliente. Hay que esperar a que vuelva a escribir`;
     case "none":
       return `La ventana de ${caps.label} está cerrada y este canal no permite reabrirla: hay que esperar a que el cliente vuelva a escribir`;
   }
 }
+
+/**
+ * 024 — Mensaje cuando quien intenta escribir es la IA y la ventana normal ya
+ * cerró, aunque una persona todavía pueda contestar.
+ */
+export function aiWindowClosedMessage(channel: Channel): string {
+  const caps = capabilitiesFor(channel);
+  return `La ventana de respuestas automáticas de ${caps.label} está cerrada: pasadas ${horas(caps.windowMs)} del último mensaje del cliente solo puede contestar una persona`;
+}
+
+const horas = (ms: number | null) => `${Math.round((ms ?? 0) / (60 * 60 * 1000))} horas`;
+const dias = (ms: number | null) => `${Math.round((ms ?? 0) / DAY_MS)} días`;
 
 /**
  * El texto más largo que acepta la API del CRM, sea cual sea el canal: el

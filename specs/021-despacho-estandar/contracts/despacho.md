@@ -113,7 +113,13 @@ Notas que son contrato:
   `/api/bot/handoff` y `/api/bot/typing`.
 - **`windowOpen: false`** significa que un texto libre será rechazado con 409
   `window_closed`. La ventana es la del canal: 24 horas, o 48 en TikTok
-  (`windowExpiresAt` ya la trae calculada).
+  (`windowExpiresAt` ya la trae calculada). En Instagram y Messenger una
+  persona puede contestar desde la bandeja hasta 7 días después; **el cerebro
+  no** (024): esa extensión lleva la etiqueta de agente humano de Meta.
+- **El texto que mandas a Instagram, Messenger o TikTok sale sin formato**
+  (024): el CRM le quita las marcas de WhatsApp y de Markdown antes de
+  enviarlo, porque esas redes no las dibujan. No tienes que saber el canal
+  para escribir; a WhatsApp llega tal cual.
 - **Un canal puede tener tope de mensajes** (022). TikTok admite 10 después
   del último mensaje del cliente; el siguiente `POST /api/bot/messages`
   responde 409 `message_limit`. No reintentes: se levanta cuando el cliente

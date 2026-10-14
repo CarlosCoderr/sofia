@@ -67,6 +67,7 @@ const cuenta = {
 let cookie = "";
 let failures = 0;
 let checks = 0;
+let baseUsada = false;
 
 function ok(name, cond, extra = "") {
   checks++;
@@ -195,7 +196,10 @@ async function cuentasConectadas() {
     const c = await conexion(canal);
     if (c?.accountRef && (c.source ?? "zernio") === "zernio") refs.push(c.accountRef);
   }
-  return refs.sort();
+  // El webhook solo lleva las que la llave ve: una conexión que dejó otra
+  // corrida, con una cuenta que el simulador ya no tiene, no cuenta.
+  const vistas = new Set(((await estadoMock()).accounts ?? []).map((a) => a._id));
+  return refs.filter((r) => vistas.has(r)).sort();
 }
 const mismas = (a, b) => JSON.stringify([...a].sort()) === JSON.stringify([...b].sort());
 const fila = (e, canal) => (e.channels ?? []).find((c) => c.channel === canal);
@@ -231,6 +235,11 @@ async function main() {
   await mock("_reset");
   await sembrar([cuenta.ig(), cuenta.fb(), cuenta.tt()]);
   await ponerWebhooks([]);
+  // ¿La base ya traía conexiones de otra corrida? Entonces ya hay un secreto
+  // guardado y el CRM lo reutiliza: no se genera uno nuevo.
+  for (const canal of ["instagram", "messenger", "tiktok"]) {
+    if (await conexion(canal)) baseUsada = true;
+  }
 
   await resolverLaCuenta();
   await soloElPropietario();
@@ -420,8 +429,10 @@ async function elWebhook() {
     JSON.stringify(aqui).replace(VERIFY_TOKEN, "<segmento>")
   );
   ok(
-    "con un secreto generado (48 caracteres hex), no vacío",
-    /^[0-9a-f]{48}$/.test(w?.secret ?? ""),
+    baseUsada
+      ? "con secreto (la base ya traía uno guardado y se reutiliza)"
+      : "con un secreto generado (48 caracteres hex), no vacío",
+    baseUsada ? (w?.secret ?? "").length >= 16 : /^[0-9a-f]{48}$/.test(w?.secret ?? ""),
     `largo ${(w?.secret ?? "").length}`
   );
   ok(

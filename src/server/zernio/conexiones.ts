@@ -22,7 +22,7 @@ import {
   webhookVerifyToken,
   type WebhookChannel,
 } from "@/server/whatsapp/webhook-url";
-import type { ZernioChannel } from "@/server/zernio/cuentas";
+import { fetchZernioAccounts, type ZernioChannel } from "@/server/zernio/cuentas";
 import {
   cachedZernioWebhooks,
   ensureZernioWebhook,
@@ -197,6 +197,28 @@ export async function storedZernioSecrets(organizationId: string): Promise<strin
   return [...new Set(conns.map((c) => c.webhookSecret).filter((s): s is string => !!s))];
 }
 
+/**
+ * Puro: qué cuentas lleva el webhook de UNA llave.
+ *
+ * No son «las conexiones guardadas con esa llave», sino todas las conexiones
+ * de la organización cuya cuenta ve esa llave. La diferencia importa cuando
+ * dos canales quedaron guardados con llaves distintas de la MISMA cuenta de
+ * Zernio (se rotó la llave y solo se reconectó un canal): las dos llaves ven
+ * el mismo webhook, y si cada una lo dejara solo con «sus» cuentas, la segunda
+ * le quitaría las de la primera y ese canal dejaría de recibir en silencio.
+ *
+ * Si la llave no ve ninguna (una lista de cuentas que aún no refleja la
+ * conexión), se mandan las del grupo y que Zernio decida.
+ */
+export function webhookAccountIds(
+  all: readonly { accountRef: string }[],
+  group: readonly { accountRef: string }[],
+  visible: ReadonlySet<string>
+): string[] {
+  const vistas = all.map((c) => c.accountRef).filter((id) => visible.has(id));
+  return [...new Set(vistas.length > 0 ? vistas : group.map((c) => c.accountRef))];
+}
+
 export type EnsureWebhookResult =
   | { ok: true; created: boolean; accounts: number }
   | { ok: false; code: string; message: string };
@@ -264,23 +286,27 @@ export async function ensureWebhookForOrg(
     for (const c of conns) porLlave.set(c.token, [...(porLlave.get(c.token) ?? []), c]);
 
     let created = false;
+    const cubiertas = new Set<string>();
     for (const [token, grupo] of porLlave) {
+      const visibles = new Set((await fetchZernioAccounts(token)).map((a) => a._id));
+      const accountIds = webhookAccountIds(conns, grupo, visibles);
       const r = await ensureZernioWebhook({
         token,
         segment,
         name,
         url,
         acceptableUrls,
-        accountIds: grupo.map((c) => c.accountRef),
+        accountIds,
         secret,
       });
       created ||= r.created;
+      for (const id of accountIds) cubiertas.add(id);
     }
 
     for (const c of conns) {
       if (c.webhookSecret !== secret) await update(c.channel, c.id, { webhookSecret: secret });
     }
-    return { ok: true, created, accounts: conns.length };
+    return { ok: true, created, accounts: cubiertas.size };
   } catch (err) {
     const caido = err instanceof MetaApiError && (err.status === 0 || err.status >= 500);
     console.warn("[zernio] no se pudo dar de alta el webhook:", err instanceof Error ? err.message : err);

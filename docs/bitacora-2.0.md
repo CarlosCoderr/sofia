@@ -346,3 +346,75 @@ evita en las instalaciones nuevas.
 ### Qué sigue
 
 024, texto social sin formato de WhatsApp y ventana humana.
+
+## 2026-10-13 — 024: texto de la IA en redes y ventana humana
+
+PR #116. Carril ligero, sin migración. Spec escrita antes del código
+(`specs/024-texto-social-ventana-humana/spec.md`).
+
+Dos cosas se decidieron distinto de como venían en el plan, y quedan dichas en
+el spec:
+
+- La etiqueta de la bandeja es **«ventana humana»**, no «atención humana»: ese
+  nombre ya es el traspaso a una persona (con la IA en pausa) y los dos
+  estados se confundían en la misma pantalla.
+- Entre 24 horas y 7 días, en Instagram y Messenger, **la IA ya no envía**
+  (`/api/bot/messages` → 409 `window_closed`). Antes enviaba con la etiqueta
+  de agente humano, que Meta reserva a personas. Es lo que `windowOpen` y el
+  contrato del despacho ya decían; el contrato ganó dos frases que lo aclaran.
+
+### Qué se probó
+
+| Qué | Resultado |
+|---|---|
+| Gates (typecheck, lint, unitarias, build) | Verde; 1,095 unitarias |
+| `scripts/e2e-ventana-social.mjs` (nuevo) | 53/53, en base limpia y repetido |
+| `e2e-canales` | 73/73 en base limpia y 73/73 sobre una base ya usada |
+| `e2e-messenger` · `e2e-tiktok` | 42/42 · 52/52 |
+| `e2e-despacho` | 94/94 con cerebro, 14/14 con el agente incluido |
+| `e2e-selftest` | 213/213 |
+| Bandeja en local | Instagram con la ventana abierta, humana (30 h) y cerrada (8 días), en claro y oscuro. Capturas con Playwright |
+
+Correr `e2e-canales` después de `e2e-ventana-social` sobre la misma base
+destapó un fallo de la 023: con dos canales guardados con **llaves distintas
+de la misma cuenta de Zernio** (se rota la llave y solo se reconecta uno), al
+dar de alta el webhook la segunda llave lo dejaba solo con «sus» cuentas y el
+otro canal dejaba de recibir en silencio. Ahora cada llave deja el webhook con
+todas las cuentas de la organización que esa llave ve (`webhookAccountIds`,
+con sus pruebas). Va en este mismo PR.
+
+### En vivo (instancia `vocero-clase`, imagen `1.6.0-rc.2`)
+
+Tag `v1.6.0-rc.2` sobre el commit `980b47d` de la rama; la instancia lo corre
+desde el 2026-10-14 01:16 UTC (`/api/health` lo confirma por commit).
+
+- Estado de los canales: los tres conectados y sanos; Messenger ya enseña el
+  nombre de la página.
+- La bandeja trae la ventana humana en sus dos conversaciones sociales reales
+  (abiertas, a 2.3 h del último mensaje) y `null` en WhatsApp.
+- WhatsApp: un mensaje real de la línea cliente entró y el agente contestó
+  (`delivered`). La respuesta no traía negritas, así que «WhatsApp conserva su
+  formato» queda demostrado solo por el guion.
+
+**Pendiente de verificación humana**, porque hace falta que una persona
+escriba desde su cuenta: que una respuesta del agente con negritas llegue sin
+asteriscos a Instagram y a Messenger, y ver en la bandeja de la instancia el
+aviso de ventana humana pasadas 24 horas. No se usaron las dos conversaciones
+sociales que ya existen: no se le escribe a quien no lo pidió.
+
+### Dónde vive cada cosa
+
+| Qué | Dónde |
+|---|---|
+| Instancia | La misma de la 023; etiqueta de imagen `1.6.0-rc.2` |
+| Guiones de esta prueba | `ops/vivo-024.mjs` (`ventanas`, `whatsapp`), fuera del repo |
+| Local | Bases `vocero_023_canales` y `vocero_024_limpia` en el Postgres propio (5433); `.env.e2e-canales` y `.env.e2e-limpia` en el clon, ignorados por git |
+
+Los guiones E2E inician sesión una vez cada uno y el CRM limita a 10 inicios
+cada 10 minutos por IP: correr más de ocho seguidos contra el mismo proceso da
+429 en el siguiente. Se reinicia la app entre tandas.
+
+### Qué sigue
+
+026, eliminar conversación (ciclo completo: evento `conversation.deleted` en
+el contrato del despacho).

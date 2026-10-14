@@ -488,6 +488,10 @@ Con más de un canal encendido, la Bandeja enseña el distintivo de cada
 conversación y permite filtrar por canal. El contacto, el pipeline, la ficha
 y el agente son los mismos: un lead es un lead, escriba por donde escriba.
 
+El agente escribe igual para todos los canales y Vocero lo adapta al salir:
+en Instagram, Messenger y TikTok, que no dibujan las negritas de WhatsApp, su
+texto llega sin asteriscos, con viñetas y con los enlaces legibles.
+
 **Configuración → Estado** reúne todos los canales encendidos: si están
 conectados, cuándo entró el último mensaje de un cliente y, para los que
 llegan por Zernio, cómo están la cuenta y el webhook. Es el primer sitio que
@@ -540,8 +544,10 @@ desde **Configuración → Messenger**. La página y su nombre salen de Zernio.
 
 Desde ese momento, lo que la gente le escribe a la página entra a la bandeja
 como `Messenger`, con el nombre de su perfil, y lo que respondas desde Vocero
-(tú o el agente) llega a su chat. Fuera de la ventana de 24 h la respuesta sale
-con la etiqueta `HUMAN_AGENT` de Meta (hasta 7 días); no hay plantillas.
+(tú o el agente) llega a su chat. No hay plantillas: pasadas 24 horas del
+último mensaje del cliente ya solo puede contestar una persona, hasta 7 días
+(sale con la etiqueta `HUMAN_AGENT` de Meta); la bandeja lo avisa y dice
+cuánto queda. El agente no contesta fuera de las 24 horas.
 Hoy el canal es de texto: los adjuntos que te manden se ven como
 «📎 Imagen» para que sepas que llegaron, y los adjuntos salientes no están.
 
@@ -570,8 +576,9 @@ página de Facebook vinculada: eso solo lo pide Messenger.
    la pantalla.
 
 A la bandeja entran los mensajes directos; los comentarios de las
-publicaciones no. Fuera de la ventana de 24 h la respuesta sale con la
-etiqueta `HUMAN_AGENT` (hasta 7 días); no hay plantillas. Sin App Review, una
+publicaciones no. No hay plantillas: pasadas 24 horas del último mensaje del
+cliente ya solo puede contestar una persona, hasta 7 días (etiqueta
+`HUMAN_AGENT`); el agente no. Sin App Review, una
 app propia solo recibe mensajes de perfiles con un rol en la app. El detalle
 del canal está en [`specs/014-canal-instagram`](specs/014-canal-instagram/spec.md).
 

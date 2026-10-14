@@ -121,7 +121,8 @@ describe("022 · lo que TikTok impone, declarado en las capacidades", () => {
     expect(windowClosedMessage("whatsapp")).toBe(
       "La ventana de 24 horas está cerrada; usa una plantilla aprobada"
     );
-    expect(windowClosedMessage("messenger")).toBe("");
+    // 024: la extensión humana tiene tope (7 días) y su propio mensaje.
+    expect(windowClosedMessage("messenger")).toContain("7 días");
   });
 
   it("el texto se mide en CARACTERES: 6,000, y un emoji cuenta uno", () => {

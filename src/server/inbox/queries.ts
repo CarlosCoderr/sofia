@@ -1,8 +1,8 @@
 import { and, desc, eq, gt, sql } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
 import { scoped } from "@/lib/db/tenant";
-import { isWindowOpen, windowRemainingMs } from "@/server/inbox/window";
-import { windowMsFor } from "@/server/channels/capabilities";
+import { isWindowOpen, replyWindow, windowRemainingMs } from "@/server/inbox/window";
+import { capabilitiesFor, windowMsFor } from "@/server/channels/capabilities";
 import type { ConversationDto } from "@/lib/types";
 
 /**
@@ -153,6 +153,11 @@ export function serializeConversation(
   stageName: string | null = null,
   anuncio: ConversationDto["anuncio"] = null
 ): ConversationDto {
+  // 024: la extensión humana solo existe en los canales que la declaran.
+  const reply =
+    capabilitiesFor(c.channel).humanAgentWindowMs !== null
+      ? replyWindow(c.channel, c.lastInboundAt)
+      : null;
   return {
     id: c.id,
     channel: c.channel,
@@ -171,6 +176,9 @@ export function serializeConversation(
       new Date(),
       windowMsFor(c.channel)
     ),
+    humanWindow: reply
+      ? { open: reply.humanAgentTag, remainingMs: reply.humanAgentTag ? reply.operatorRemainingMs : 0 }
+      : null,
     preview,
     anuncio,
   };

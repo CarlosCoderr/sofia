@@ -13,6 +13,7 @@ import {
   webhookHealth,
   type ZernioWebhook,
 } from "@/server/zernio/webhooks";
+import { webhookAccountIds } from "@/server/zernio/conexiones";
 
 // Forma real de GET /accounts (2026-10-13): un perfil con sus tres redes.
 const PERFIL = "68d2d7be1ca85e7dbf120b4e";
@@ -241,5 +242,35 @@ describe("zernio · el webhook hacia esta instancia", () => {
   it("un webhook desactivado no tapa a otro activo que sí cubre la cuenta", () => {
     const h = webhookHealth([w({ _id: "viejo", isActive: false }), w({ _id: "nuevo" })], SEGMENTO, IG);
     expect(h.level).toBe("ok");
+  });
+});
+
+describe("zernio · qué cuentas lleva el webhook de una llave", () => {
+  const ig = { accountRef: IG };
+  const fb = { accountRef: FB };
+  const tt = { accountRef: TT };
+
+  it("una sola llave: todas las cuentas conectadas", () => {
+    expect(webhookAccountIds([ig, fb, tt], [ig, fb, tt], new Set([IG, FB, TT]))).toEqual([IG, FB, TT]);
+  });
+
+  it("dos llaves de la MISMA cuenta de Zernio: cada una deja el webhook con todas", () => {
+    // Se rotó la llave y solo se reconectó Instagram: las dos ven lo mismo.
+    const todas = new Set([IG, FB, TT]);
+    expect(webhookAccountIds([ig, fb, tt], [ig], todas)).toEqual([IG, FB, TT]);
+    expect(webhookAccountIds([ig, fb, tt], [fb, tt], todas)).toEqual([IG, FB, TT]);
+  });
+
+  it("dos cuentas de Zernio distintas: cada llave, solo las suyas", () => {
+    expect(webhookAccountIds([ig, fb, tt], [ig], new Set([IG]))).toEqual([IG]);
+    expect(webhookAccountIds([ig, fb, tt], [fb, tt], new Set([FB, TT]))).toEqual([FB, TT]);
+  });
+
+  it("si la llave no ve ninguna, van las de su grupo", () => {
+    expect(webhookAccountIds([ig, fb], [ig], new Set())).toEqual([IG]);
+  });
+
+  it("nunca incluye cuentas que no están conectadas a la organización", () => {
+    expect(webhookAccountIds([ig], [ig], new Set([IG, "cuenta-de-un-cliente"]))).toEqual([IG]);
   });
 });

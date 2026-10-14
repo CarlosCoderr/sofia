@@ -9,7 +9,8 @@ import {
   markReconnectRequired,
   type Credentials,
 } from "@/server/whatsapp/credentials";
-import { isWindowOpen } from "@/server/inbox/window";
+import { isWindowOpen, replyWindow } from "@/server/inbox/window";
+import { plainSocialText } from "@/lib/social-text";
 import { IG_PREFIX } from "@/server/inbox/identity";
 import {
   getInstagramCredentialsByOrg,
@@ -42,6 +43,7 @@ import {
   textLimitMessage,
   windowClosedMessage,
   windowMsFor,
+  aiWindowClosedMessage,
 } from "@/server/channels/capabilities";
 import { isChannelEnabled } from "@/server/channels/enabled";
 import { serializeMessage } from "@/server/inbox/ingest";
@@ -91,7 +93,37 @@ type SendTarget = {
   messenger?: MessengerCredentials;
   /** 022: presente solo en conversaciones de TikTok. */
   tiktok?: TiktokCredentials;
+  /**
+   * 024: el envío sale con la etiqueta de agente humano. Lo decide el
+   * pre-vuelo (`assertReplyWindow`), no cada canal por su cuenta.
+   */
+  humanAgentTag?: boolean;
 };
+
+/**
+ * 024 — La puerta de la ventana para los canales con extensión humana
+ * (Instagram y Messenger). Devuelve si el envío lleva la etiqueta.
+ *
+ * - Dentro de la ventana normal escribe cualquiera.
+ * - Después, y hasta el tope de la extensión, solo una persona, con la
+ *   etiqueta. La IA no: Meta reserva esa etiqueta a agentes humanos.
+ * - Pasado el tope (o sin ningún mensaje del cliente) no escribe nadie, y se
+ *   dice aquí en vez de dejar que la plataforma rechace el envío con un error
+ *   que el operador no entiende.
+ */
+function assertReplyWindow(
+  conversation: SendTarget["conversation"],
+  aiGenerated: boolean
+): boolean {
+  const w = replyWindow(conversation.channel, conversation.lastInboundAt);
+  if (!w.operatorOpen) {
+    throw new SendError("window_closed", windowClosedMessage(conversation.channel));
+  }
+  if (aiGenerated && !w.standardOpen) {
+    throw new SendError("window_closed", aiWindowClosedMessage(conversation.channel));
+  }
+  return w.humanAgentTag;
+}
 
 /**
  * Pre-flight común de todo envío por la conversación (008): existencia +
@@ -100,7 +132,9 @@ type SendTarget = {
  */
 async function prepareSend(
   conversationId: string,
-  organizationId: string
+  organizationId: string,
+  /** 024: quién escribe decide si puede usar la extensión humana. */
+  aiGenerated: boolean = false
 ): Promise<SendTarget> {
   const db = getDb();
   const rows = await db
@@ -155,7 +189,9 @@ async function prepareSend(
     const igRecipient = row.contact.waIdentity.startsWith(IG_PREFIX)
       ? row.contact.waIdentity.slice(IG_PREFIX.length)
       : row.contact.waIdentity;
+    const humanAgentTag = assertReplyWindow(row.conversation, aiGenerated);
     return {
+      humanAgentTag,
       conversation: row.conversation,
       credentials: null,
       // Instagram no pasa por la Graph API de WhatsApp; el campo existe para
@@ -191,7 +227,9 @@ async function prepareSend(
     const fbRecipient = row.contact.waIdentity.startsWith(FB_PREFIX)
       ? row.contact.waIdentity.slice(FB_PREFIX.length)
       : row.contact.waIdentity;
+    const humanAgentTag = assertReplyWindow(row.conversation, aiGenerated);
     return {
+      humanAgentTag,
       conversation: row.conversation,
       credentials: null,
       // Messenger tampoco pasa por la Graph API de WhatsApp.
@@ -368,28 +406,41 @@ export async function sendText(input: {
   text: string;
   aiGenerated?: boolean;
 }): Promise<SendResult> {
-  const target = await prepareSend(input.conversationId, input.organizationId);
+  const target = await prepareSend(
+    input.conversationId,
+    input.organizationId,
+    input.aiGenerated ?? false
+  );
   const { credentials } = target;
+  const canal = target.conversation.channel;
+
+  // 024: la IA escribe con formato de WhatsApp (y a veces Markdown). En un
+  // canal que no lo dibuja se le quitan las marcas ANTES de medir, enviar y
+  // guardar: lo que queda en el hilo es lo que el cliente leyó. Lo que escribe
+  // una persona no se toca.
+  const text =
+    input.aiGenerated && capabilitiesFor(canal).textFormat === "plain"
+      ? plainSocialText(input.text)
+      : input.text;
 
   // 022: el límite de longitud es del canal. WhatsApp y TikTok lo declaran en
   // caracteres y se comprueba aquí, antes de llamar a nadie; Instagram y
   // Messenger (en bytes) lo siguen comprobando en su propio camino.
-  const canal = target.conversation.channel;
-  if (capabilitiesFor(canal).maxTextChars !== null && !textFits(canal, input.text)) {
+  if (capabilitiesFor(canal).maxTextChars !== null && !textFits(canal, text)) {
     throw new SendError("text_too_long", textLimitMessage(canal));
   }
 
   const waMessageId = target.instagram
-    ? await callInstagramSend(target, input.text)
+    ? await callInstagramSend(target, text)
     : target.messenger
-      ? await callMessengerSend(target, input.text)
+      ? await callMessengerSend(target, text)
       : target.tiktok
-        ? await callTiktokSend(target, input.text)
+        ? await callTiktokSend(target, text)
         : await callGraphSend(credentials!, {
           messaging_product: "whatsapp",
           ...target.destinatario,
           type: "text",
-          text: { body: input.text },
+          text: { body: text },
         });
 
   const messageId = await persistOutbound({
@@ -397,7 +448,7 @@ export async function sendText(input: {
     conversationId: input.conversationId,
     waMessageId,
     type: "text",
-    text: input.text,
+    text,
     // Un canal sin acuses de entrega confirma al aceptar; uno con acuses
     // avanza despues por webhook. Sin esta distincion el mensaje se queda
     // con el reloj puesto para siempre.
@@ -652,8 +703,9 @@ async function callInstagramSend(
   }
 
   // Instagram no tiene plantillas: fuera de la ventana de 24 h la única vía
-  // es la etiqueta de agente humano (hasta 7 días).
-  const humanAgentTag = !isWindowOpen(target.conversation.lastInboundAt);
+  // es la etiqueta de agente humano (hasta 7 días). 024: quién puede usarla
+  // lo decidió ya el pre-vuelo.
+  const humanAgentTag = target.humanAgentTag ?? false;
 
   try {
     const res = await sendInstagramText({
@@ -704,8 +756,9 @@ async function callMessengerSend(
   }
 
   // Messenger no tiene plantillas: fuera de la ventana de 24 h la única vía
-  // es la etiqueta de agente humano (hasta 7 días).
-  const humanAgentTag = !isWindowOpen(target.conversation.lastInboundAt);
+  // es la etiqueta de agente humano (hasta 7 días). 024: quién puede usarla
+  // lo decidió ya el pre-vuelo.
+  const humanAgentTag = target.humanAgentTag ?? false;
 
   try {
     const res = await sendMessengerText({
