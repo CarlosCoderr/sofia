@@ -488,22 +488,44 @@ Con más de un canal encendido, la Bandeja enseña el distintivo de cada
 conversación y permite filtrar por canal. El contacto, el pipeline, la ficha
 y el agente son los mismos: un lead es un lead, escriba por donde escriba.
 
+**Configuración → Estado** reúne todos los canales encendidos: si están
+conectados, cuándo entró el último mensaje de un cliente y, para los que
+llegan por Zernio, cómo están la cuenta y el webhook. Es el primer sitio que
+mirar cuando «no me llegan los mensajes».
+
+### Conectar por Zernio (Instagram, Messenger o TikTok)
+
+[Zernio](https://zernio.com) es una API unificada: vinculas ahí tus redes, con
+tu propia cuenta, y una sola llave las entrega todas. En Vocero es igual para
+los tres canales:
+
+1. En Zernio vincula la red (**Accounts → Connect**) y crea una API key
+   (**Settings → API Keys**; empieza con `sk_` y se muestra una sola vez).
+2. En Vocero abre la pantalla del canal, elige *Zernio*, pega la llave y
+   pulsa **Probar y conectar**. Solo el propietario puede hacerlo.
+
+No hay que copiar ningún id ni dar de alta nada más en Zernio:
+
+- **La cuenta la encuentra Vocero** con esa llave. Si la llave tiene varias
+  cuentas de esa red (una agencia), te las ofrece para elegir.
+- **El webhook lo da de alta Vocero** en tu Zernio, con el evento
+  `message.received`, un secreto de firma que él genera y **limitado a tus
+  cuentas conectadas**. Un webhook de Zernio sin ese límite recibe los
+  mensajes de todas las cuentas de la llave. Los demás webhooks que tengas en
+  Zernio no se tocan.
+- Si un día el webhook se desactiva o le falta una cuenta, **Configuración →
+  Estado** lo dice y lo repara con un botón.
+
+Cada entrega se verifica con la firma de Zernio. Si actualizas desde una
+versión anterior y ya tenías el webhook creado a mano, sigue funcionando: al
+abrir **Estado** verás si le falta algo.
+
 ### Messenger (página de Facebook)
 
 Dos formas de traer los mensajes; se elige en **Configuración → Messenger**.
 
-**Con Zernio** (API unificada, la misma que puede servir Instagram):
-
-1. Vincula la página de Facebook en el panel de [Zernio](https://zernio.com) y
-   copia el `accountId` de esa cuenta. Crea una API key (Settings → API Keys;
-   se muestra una sola vez).
-2. En Vocero, **Configuración → Messenger**: elige *Zernio*, pega el
-   `accountId`, la API key y —recomendado— un secreto de webhook. Pulsa
-   *Probar y guardar*: la llave se valida contra Zernio antes de guardarse
-   cifrada, y la pantalla te enseña la URL de callback.
-3. En Zernio, da de alta ese endpoint con el evento `message.received` y el
-   mismo secreto. El webhook de Zernio entrega todas tus plataformas por la
-   misma URL; Vocero solo ingiere aquí lo de Facebook.
+**Con Zernio**: sigue [Conectar por Zernio](#conectar-por-zernio-instagram-messenger-o-tiktok)
+desde **Configuración → Messenger**. La página y su nombre salen de Zernio.
 
 **Con una app propia de Meta**:
 
@@ -529,25 +551,39 @@ Por Zernio ese trámite ya está resuelto del lado de ellos.
 
 ### Instagram (DMs del perfil profesional)
 
-Mismo modelo, con dos fuentes posibles: una app propia de Meta (perfil del
-negocio como tester) o [Zernio](https://zernio.com) como API unificada. La
-conexión se guarda por la API de ajustes (`PUT /api/settings/instagram`) y el
-webhook vive en `/api/webhooks/ig/<token>`. El detalle está en
-[`specs/014-canal-instagram`](specs/014-canal-instagram/spec.md).
+Dos formas de traer los mensajes; se elige en **Configuración → Instagram**.
+La cuenta tiene que ser profesional (de empresa o de creador). No necesita una
+página de Facebook vinculada: eso solo lo pide Messenger.
+
+**Con Zernio**: sigue [Conectar por Zernio](#conectar-por-zernio-instagram-messenger-o-tiktok).
+
+**Con una app propia de Meta**:
+
+1. En [developers.facebook.com](https://developers.facebook.com) crea (o usa)
+   una app con el producto **Instagram** y genera el token de la cuenta con
+   los permisos `instagram_business_basic` e
+   `instagram_business_manage_messages`. Anota el **ID de la cuenta**.
+2. En Vocero, **Configuración → Instagram**: elige *App propia de Meta*, pega
+   el ID y el token y pulsa *Probar y guardar*.
+3. En la app de Meta, **Instagram → Webhooks**: objeto `instagram`, campo
+   `messages`, con la URL de callback y el token de verificación que enseña
+   la pantalla.
+
+A la bandeja entran los mensajes directos; los comentarios de las
+publicaciones no. Fuera de la ventana de 24 h la respuesta sale con la
+etiqueta `HUMAN_AGENT` (hasta 7 días); no hay plantillas. Sin App Review, una
+app propia solo recibe mensajes de perfiles con un rol en la app. El detalle
+del canal está en [`specs/014-canal-instagram`](specs/014-canal-instagram/spec.md).
 
 ### TikTok (mensajes directos de una cuenta de negocio)
 
 TikTok no entrega mensajes a una app propia: llegan por
 [Zernio](https://zernio.com), con tu cuenta de Zernio.
 
-1. En Zernio conecta tu cuenta de TikTok y copia su `accountId`; crea una API
-   key y, si quieres verificar la firma, un secreto de webhook.
-2. En Vocero, **Configuración → TikTok**: pega el `accountId`, la API key y el
-   secreto. La llave se prueba antes de guardar y queda cifrada.
-3. En Zernio da de alta el webhook que enseña esa pantalla, con el evento
-   `message.received`. Si ya tienes uno para Instagram o Messenger, sirve el
-   mismo: Zernio entrega todas las cuentas por un webhook y Vocero reparte por
-   plataforma.
+Sigue [Conectar por Zernio](#conectar-por-zernio-instagram-messenger-o-tiktok)
+desde **Configuración → TikTok**. Si la cuenta es personal, Vocero la conecta
+pero te avisa ahí mismo y en **Estado**: TikTok no le entrega mensajes hasta
+que sea Business.
 
 Lo que TikTok impone, y Vocero te dice antes de que lo descubras con un
 mensaje rechazado:

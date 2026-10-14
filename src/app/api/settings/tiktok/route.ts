@@ -1,6 +1,5 @@
 import { z } from "zod";
 import { apiError, parseBody, withAuth } from "@/lib/api";
-import { MetaApiError } from "@/lib/meta/client";
 import {
   channelDisabledResponse,
   isChannelEnabled,
@@ -10,7 +9,9 @@ import {
   saveTiktokCredentials,
   tokenLast4,
 } from "@/server/tiktok/credentials";
-import { verifyZernioToken } from "@/server/zernio";
+import { ensureWebhookForOrg } from "@/server/zernio/conexiones";
+import { accountHealth, zernioAccountName } from "@/server/zernio/cuentas";
+import { resolveZernioAccount } from "@/server/zernio/guardar";
 
 export const dynamic = "force-dynamic";
 
@@ -32,8 +33,11 @@ export const GET = withAuth(async (session) => {
 });
 
 const putSchema = z.object({
-  /** `accountId` de la cuenta de TikTok en Zernio. */
-  accountRef: z.string().trim().min(1),
+  /**
+   * `accountId` de la cuenta de TikTok en Zernio. Opcional si la llave tiene
+   * una sola cuenta de TikTok (023).
+   */
+  accountRef: z.string().trim().min(1).nullish(),
   /** Usuario de TikTok, solo para enseñarlo: no enruta nada. */
   username: z.string().trim().min(1).max(100).nullish(),
   token: z.string().trim().min(1),
@@ -53,30 +57,34 @@ export const PUT = withAuth(async (session, req: Request) => {
   const body = await parseBody(req, putSchema);
   if (!body.ok) return body.response;
 
-  try {
-    await verifyZernioToken(body.data.token);
-  } catch (err) {
-    if (err instanceof MetaApiError) {
-      if (err.status === 0 || err.status >= 500) {
-        return apiError(
-          503,
-          "platform_unavailable",
-          "No se pudo contactar a Zernio; intenta de nuevo"
-        );
-      }
-      return apiError(422, "invalid_token", "La API key de Zernio no es válida");
-    }
-    throw err;
-  }
+  // 023: la cuenta se resuelve contra Zernio, no se guarda a ciegas.
+  const cuenta = await resolveZernioAccount(body.data.token, body.data.accountRef, "tiktok");
+  if (!cuenta.ok) return cuenta.response;
 
-  const username = body.data.username?.replace(/^@/, "") || null;
+  const previa = await getTiktokCredentialsByOrg(session.organizationId);
+  const username =
+    (cuenta.account.username ?? body.data.username)?.replace(/^@/, "") || null;
   await saveTiktokCredentials({
     organizationId: session.organizationId,
-    accountRef: body.data.accountRef,
+    accountRef: cuenta.account._id,
     username,
     token: body.data.token,
-    webhookSecret: body.data.webhookSecret ?? null,
+    // Sin secreto nuevo se conserva el que había: reconectar no debe apagar
+    // la verificación de firma.
+    webhookSecret: body.data.webhookSecret ?? previa?.webhookSecret ?? null,
   });
+  const webhook = await ensureWebhookForOrg(session.organizationId, {
+      secret: body.data.webhookSecret,
+    });
 
-  return Response.json({ ok: true, username });
+  return Response.json({
+    ok: true,
+    username,
+    accountRef: cuenta.account._id,
+    accountName: zernioAccountName(cuenta.account),
+    // Una cuenta personal se guarda igual, pero se dice: TikTok no le entrega
+    // mensajes hasta que sea Business.
+    health: accountHealth(cuenta.account, "tiktok"),
+    webhook,
+  });
 });

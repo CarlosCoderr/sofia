@@ -687,6 +687,40 @@ async function adjunto(cerebro) {
   }
 }
 
+/**
+ * 023: guardar una conexión por Zernio resuelve la cuenta contra las de la
+ * llave, así que el simulador tiene que servirlas.
+ */
+async function sembrarCuentasDeZernio() {
+  await api("/api/dev/zernio-mock/_accounts", {
+    method: "POST",
+    body: JSON.stringify({
+      accounts: [
+        {
+          _id: "zernio-ig-despacho",
+          platform: "instagram",
+          username: "ig.despacho",
+          platformUserId: "ig-user-despacho",
+          isActive: true,
+          platformStatus: "active",
+        },
+        {
+          _id: "zernio-tt-despacho",
+          platform: "tiktok",
+          username: "tt.despacho",
+          isActive: true,
+          platformStatus: "active",
+          tiktokAccountType: "business",
+        },
+      ],
+    }),
+  });
+  await api("/api/dev/zernio-mock/_webhooks", {
+    method: "POST",
+    body: JSON.stringify({ webhooks: [] }),
+  });
+}
+
 async function otrosCanales(cerebro) {
   console.log("\n== AC3: Messenger e Instagram se despachan igual ==");
   if (!CHANNELS.includes("messenger")) {
@@ -757,6 +791,7 @@ async function otrosCanales(cerebro) {
   const CUENTA = "zernio-ig-despacho";
   const SECRETO = "secreto-del-webhook-de-zernio";
   const igsid = `igsid-despacho-${RUN}`;
+  await sembrarCuentasDeZernio();
   const c = await api("/api/settings/instagram", {
     method: "PUT",
     body: JSON.stringify({
@@ -821,6 +856,7 @@ async function tiktok(cerebro) {
   const CUENTA = "zernio-tt-despacho";
   const SECRETO = "secreto-del-webhook-de-zernio";
   const sender = `tt-despacho-${RUN}`;
+  await sembrarCuentasDeZernio();
   const c = await api("/api/settings/tiktok", {
     method: "PUT",
     body: JSON.stringify({ accountRef: CUENTA, token: "zernio-key-demo", webhookSecret: SECRETO }),

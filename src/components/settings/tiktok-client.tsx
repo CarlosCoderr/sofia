@@ -1,9 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { AlertTriangle, CheckCircle2, Copy, Info } from "lucide-react";
+import Link from "next/link";
+import { AlertTriangle, CheckCircle2, Info } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -11,8 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { ZernioConnect } from "@/components/settings/zernio-connect";
 
 /**
  * 022 — Conexión del canal de TikTok.
@@ -34,12 +33,9 @@ type Connection = {
   hasWebhookSecret: boolean;
 };
 
-type WebhookInfo = { tiktokUrl: string | null };
-
 const PASOS = [
-  "La cuenta se vincula en el panel de Zernio, no desde aquí. Copia de ahí el accountId de la cuenta de TikTok conectada.",
+  "La cuenta se vincula en el panel de Zernio (Accounts → Connect), no desde aquí.",
   "La API key se crea en Zernio → Settings → API Keys y se muestra una sola vez (empieza con sk_).",
-  "El secreto del webhook es opcional pero recomendado: con él se verifica la firma de cada entrega.",
 ];
 
 const REGLAS = [
@@ -51,30 +47,13 @@ const REGLAS = [
 
 export function TiktokClient() {
   const [connection, setConnection] = useState<Connection | null>(null);
-  const [webhook, setWebhook] = useState<WebhookInfo | null>(null);
   const [loaded, setLoaded] = useState(false);
-  const [accountRef, setAccountRef] = useState("");
-  const [username, setUsername] = useState("");
-  const [token, setToken] = useState("");
-  const [webhookSecret, setWebhookSecret] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [saved, setSaved] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
 
   const refetch = useCallback(async () => {
-    const [c, w] = await Promise.all([
-      fetch("/api/settings/tiktok").then((r) => (r.ok ? r.json() : null)),
-      fetch("/api/settings/webhook").then((r) => (r.ok ? r.json() : null)),
-    ]).catch(() => [null, null]);
-    if (c) {
-      setConnection(c.connection);
-      if (c.connection) {
-        setAccountRef(c.connection.accountRef);
-        if (c.connection.username) setUsername(c.connection.username);
-      }
-    }
-    if (w) setWebhook(w);
+    const c = await fetch("/api/settings/tiktok")
+      .then((r) => (r.ok ? r.json() : null))
+      .catch(() => null);
+    if (c) setConnection(c.connection);
     setLoaded(true);
   }, []);
 
@@ -82,47 +61,7 @@ export function TiktokClient() {
     void refetch();
   }, [refetch]);
 
-  async function save() {
-    setSaving(true);
-    setError(null);
-    setSaved(null);
-    const res = await fetch("/api/settings/tiktok", {
-      method: "PUT",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        accountRef: accountRef.trim(),
-        username: username.trim() || null,
-        token: token.trim(),
-        webhookSecret: webhookSecret.trim() || null,
-      }),
-    }).catch(() => null);
-    setSaving(false);
-    if (!res?.ok) {
-      const data = (await res?.json().catch(() => null)) as {
-        error?: { message?: string };
-      } | null;
-      setError(data?.error?.message ?? "No se pudo conectar la cuenta");
-      return;
-    }
-    setToken("");
-    setWebhookSecret("");
-    setSaved("Conexión guardada");
-    void refetch();
-  }
-
-  async function copy(text: string) {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      // sin portapapeles (contexto no seguro): el texto sigue visible
-    }
-  }
-
   if (!loaded) return <p className="text-sm text-muted-foreground">Cargando…</p>;
-
-  const canSave = token.trim().length > 0 && accountRef.trim().length > 0;
 
   return (
     <div className="max-w-3xl space-y-6">
@@ -192,96 +131,26 @@ export function TiktokClient() {
             ))}
           </ul>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="tt-account">accountId de Zernio</Label>
-              <Input
-                id="tt-account"
-                value={accountRef}
-                onChange={(e) => setAccountRef(e.target.value)}
-                placeholder="665f1c2e8b3a4d0012345678"
-                autoComplete="off"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="tt-username">Usuario de TikTok (opcional)</Label>
-              <Input
-                id="tt-username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="tunegocio"
-                autoComplete="off"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="tt-token">API key de Zernio</Label>
-              <Input
-                id="tt-token"
-                type="password"
-                value={token}
-                onChange={(e) => setToken(e.target.value)}
-                placeholder="sk_…"
-                autoComplete="off"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="tt-secret">Secreto del webhook (opcional)</Label>
-              <Input
-                id="tt-secret"
-                type="password"
-                value={webhookSecret}
-                onChange={(e) => setWebhookSecret(e.target.value)}
-                placeholder="el mismo que pusiste en Zernio"
-                autoComplete="off"
-              />
-            </div>
-          </div>
-
-          {error && <p className="text-sm text-destructive">{error}</p>}
-          {saved && <p className="text-sm text-success-text">{saved} ✓</p>}
-
-          <Button disabled={saving || !canSave} onClick={() => void save()}>
-            {saving ? "Probando…" : "Probar y guardar"}
-          </Button>
+          <ZernioConnect
+            endpoint="/api/settings/tiktok"
+            what="tu cuenta de TikTok"
+            idPrefix="tt"
+            onSaved={() => void refetch()}
+          />
         </CardContent>
       </Card>
 
-      {webhook?.tiktokUrl && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Webhook de TikTok</CardTitle>
-            <CardDescription>
-              En Zernio, da de alta este endpoint con el evento{" "}
-              <code>message.received</code> y, si usas secreto, el mismo que
-              pegaste arriba.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="space-y-1.5">
-              <Label>URL de callback</Label>
-              <div className="flex gap-2">
-                <Input readOnly value={webhook.tiktokUrl} className="font-mono text-xs" />
-                <Button
-                  variant="outline"
-                  size="icon"
-                  aria-label="Copiar la URL"
-                  onClick={() => void copy(webhook.tiktokUrl!)}
-                >
-                  {copied ? <CheckCircle2 className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                </Button>
-              </div>
-            </div>
-            <p className="flex items-start gap-2 text-xs text-text-2">
-              <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-              Zernio entrega todas las cuentas de tu llave por el mismo
-              webhook. Si ya tienes uno dado de alta para Instagram o
-              Messenger, sirve también para TikTok: no hace falta otro. Si
-              compartes la llave con otros negocios, limita el webhook a esta
-              cuenta desde Zernio (accountIds).
-            </p>
-          </CardContent>
-        </Card>
-      )}
+      <p className="flex items-start gap-2 text-xs text-text-2">
+        <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+        <span>
+          El webhook lo da de alta Vocero en tu Zernio al conectar, limitado a
+          tus cuentas. Si un día dejan de llegar mensajes, revisa{" "}
+          <Link href="/settings/channels" className="font-semibold underline">
+            el estado de los canales
+          </Link>
+          .
+        </span>
+      </p>
     </div>
   );
 }

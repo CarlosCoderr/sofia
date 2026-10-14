@@ -4,7 +4,8 @@
 
 **Created**: 2026-10-13
 
-**Status**: Especificada antes de escribir código.
+**Status**: Especificada antes de escribir código. Implementada; gates y
+guiones E2E en verde.
 
 **Input**: tercera spec de la 1.6.0 (`PLAN-2.0.md`, aprobado por el dueño el
 2026-10-13). Puerto de cuatro arreglos que megaparty-crm ya probó con un
@@ -61,7 +62,10 @@ prueba contra los secretos guardados en sus canales con fuente Zernio. Si
 ninguno coincide, contra los de los webhooks de Zernio que apuntan a esta
 instancia (se reconocen porque su URL lleva el segmento secreto), leídos de
 `GET /webhooks/settings` con la llave guardada. Esa lectura se guarda 10
-minutos; un fallo, 1 minuto. Sin ningún secreto en ningún lado, la capa sigue
+minutos; un fallo, 1 minuto. Si la firma no coincide con lo leído y la lectura
+tiene más de un minuto, se relee: es lo que tarda el CRM en enterarse de que
+el secreto cambió en Zernio, y el tope de consultas que puede provocar quien
+mande firmas inválidas. Sin ningún secreto en ningún lado, la capa sigue
 apagada y protege el segmento secreto de la URL, como hoy.
 
 **D4 — El CRM da de alta su webhook en Zernio.** Al guardar una conexión por
@@ -71,7 +75,8 @@ esta organización**, con un secreto que genera y guarda en esos canales. Solo
 toca webhooks que ya apuntan a esta instancia; los demás no se leen más que
 para contarlos. Si Zernio falla, la conexión se guarda igual y el fallo se
 dice. El campo «secreto del webhook» sale de las pantallas: la API lo sigue
-aceptando, y si no llega se conserva el que ya había.
+aceptando (el que llega manda sobre los guardados y queda en todos los canales
+y en Zernio), y si no llega se conserva el que ya había.
 
 **D5 — Pantalla Ajustes → Canales → Estado** (`/settings/channels`). Una fila
 por canal encendido, WhatsApp incluido:

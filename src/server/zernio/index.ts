@@ -49,6 +49,22 @@ export function isValidZernioSignature(
   return timingSafeEqual(a, b);
 }
 
+/**
+ * 023 — Firma válida contra CUALQUIERA de los secretos. Un webhook de Zernio
+ * firma con un solo secreto y sirve a todos los canales de esa llave; el CRM
+ * guarda uno por canal, y si al capturarlos no quedaron iguales, un canal
+ * rechazaba todo con 401. Sin secretos la capa queda desactivada, igual que
+ * `isValidZernioSignature`.
+ */
+export function isValidZernioSignatureAny(
+  rawBody: string,
+  signature: string | null,
+  secrets: readonly string[]
+): boolean {
+  if (secrets.length === 0) return true;
+  return secrets.some((s) => isValidZernioSignature(rawBody, signature, s));
+}
+
 /** El evento de Zernio, en lo que a Vocero le importa. */
 export type ZernioEvent = {
   id?: string;
@@ -78,7 +94,11 @@ export type ZernioEvent = {
   };
   /** 022: el hilo también viene aparte; su `id` es el `conversationId`. */
   conversation?: { id?: string };
-  account?: { id?: string; accountId?: string; platform?: string };
+  /**
+   * 023: `profileId` es el del perfil que agrupa las cuentas. Sirve para
+   * corregir una conexión guardada con ese id en vez del de la cuenta.
+   */
+  account?: { id?: string; accountId?: string; platform?: string; profileId?: string };
 };
 
 /**
@@ -189,10 +209,12 @@ export async function verifyZernioToken(token: string): Promise<void> {
  * interpretar — incluido `isAuthError`, que distingue una llave muerta de un
  * hipo transitorio y costó un incidente aprender.
  */
-async function zernioFetch(
+export async function zernioFetch(
   path: string,
   opts: {
-    method?: "GET" | "POST";
+    method?: "GET" | "POST" | "PUT";
+    /** 023: corta la espera; sin él, la del runtime. */
+    timeoutMs?: number;
     token: string;
     body?: unknown;
     headers?: Record<string, string>;
@@ -208,6 +230,7 @@ async function zernioFetch(
         ...(opts.headers ?? {}),
       },
       body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
+      ...(opts.timeoutMs ? { signal: AbortSignal.timeout(opts.timeoutMs) } : {}),
     });
   } catch (cause) {
     throw new MetaApiError("No se pudo contactar la API de Zernio", {

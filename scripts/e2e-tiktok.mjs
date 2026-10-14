@@ -187,6 +187,26 @@ async function main() {
   }
   ok("registro o login del operador", su.res.ok, JSON.stringify(su.json));
   await api("/api/dev/zernio-mock/_reset", { method: "POST" });
+  // 023: la cuenta se resuelve contra las de la llave; el simulador las sirve.
+  await api("/api/dev/zernio-mock/_accounts", {
+    method: "POST",
+    body: JSON.stringify({
+      accounts: [
+        {
+          _id: ACCOUNT,
+          platform: "tiktok",
+          username: "negocio.demo",
+          isActive: true,
+          platformStatus: "active",
+          tiktokAccountType: "business",
+        },
+      ],
+    }),
+  });
+  await api("/api/dev/zernio-mock/_webhooks", {
+    method: "POST",
+    body: JSON.stringify({ webhooks: [] }),
+  });
   const perfil = await api("/api/agent/profile", {
     method: "PUT",
     body: JSON.stringify({ enabled: true }),
