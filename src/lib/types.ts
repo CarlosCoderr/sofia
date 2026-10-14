@@ -127,6 +127,8 @@ export type ContactDto = {
   priority?: PriorityValue | null;
   /** Lo que se sabe del lead. `{}` mientras nadie haya calificado. */
   ficha?: FichaDto;
+  /** 027 — El agente no le responde a esta persona: la atiende el dueño. */
+  aiPaused?: boolean;
 };
 
 /* ============================================================

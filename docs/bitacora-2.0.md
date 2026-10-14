@@ -487,3 +487,56 @@ abrir el diálogo en la bandeja de la instancia.
 ### Qué sigue
 
 027, importar contactos desde un CSV.
+
+## 2026-10-14 — 027: importar contactos y contactos «sin agente»
+
+PR #119. Carril ligero con el modelo de datos dentro (precedente de la 020):
+migración aditiva `0019_contact_ai_paused`. Puerto de Vocero Cloud #108, con
+una decisión propia del raíz (D4b): el nombre del archivo queda como escrito
+a mano, para que el nombre de perfil de WhatsApp no lo pise.
+
+### Qué se probó
+
+| Qué | Resultado |
+|---|---|
+| Gates (typecheck, lint, unitarias, build) | Verde; 1,116 unitarias (12 del lector de CSV, traídas de cloud) |
+| `scripts/e2e-importar.mjs` (nuevo) | 37/37: 50 renglones entran y no duplican; rechazados con su motivo; el importado que escribe cae en su ficha con la IA en pausa y el agente calla; a un desconocido sí le contesta; reencender desde el contacto |
+| `e2e-despacho` | 94/94 con cerebro, 14/14 con el agente incluido |
+| `e2e-eliminar` · `e2e-ventana-social` · `e2e-canales` · `e2e-selftest` | 56/56 y 31/31 · 53/53 · 73/73 · 213/213 |
+| Diálogo en local | Un CSV como lo exporta Excel en español (BOM, punto y coma, «Teléfono» con acento, apellidos aparte, un nombre con coma entre comillas), en claro y oscuro |
+
+### En vivo (instancia `vocero-clase`, imagen `1.6.0-rc.4`)
+
+Tag `v1.6.0-rc.4` sobre `92670ff`; la instancia lo corre desde el 2026-10-14
+03:39 UTC. `ops/vivo-027.mjs`, sin escribirle a nadie:
+
+- Importa dos contactos con teléfonos que no pueden existir (lada 00) y un
+  renglón sin lada: 2 nuevos «sin agente», 1 rechazado con su motivo, ninguna
+  conversación. Repetido: 0 nuevos, 2 que ya existían.
+- Uno «escribe» con un webhook sintético de WhatsApp (la instancia no tiene
+  App Secret; la puerta es el segmento de la URL): su conversación nace con la
+  IA en pausa, en su misma ficha y con el nombre del archivo, y en 20 segundos
+  el agente no contesta una pregunta que sí contesta a cualquiera.
+- Los dos se eliminan con la 026; la bandeja queda con las mismas 4
+  conversaciones.
+
+### Lo demás de esta jornada
+
+- **Webhooks de Zernio:** a pedido de Kevin se borraron los tres inactivos
+  (`vocero-ensayo16…`, `vocero-16-clase`, `vocero`) y el activo
+  `megaparty-crm`, que era de sus pruebas para ese cliente en su propia cuenta
+  de Zernio y recibía los eventos de sus cuentas personales. Queda solo el de
+  `vocero-clase`, limitado a sus dos cuentas. Guiones `ops/zernio-limpiar.mjs`
+  y `ops/zernio-borrar-uno.mjs`.
+- **DMs reales de Kevin** (03:12 UTC) a Instagram y a la página: entraron con
+  la imagen `rc.3`, firma verificada y webhook sin fallos. El agente no les
+  contestó: «Hola prueba 1» también se queda sin respuesta por WhatsApp. Es el
+  modelo eligiendo la acción `none`, que el prompt le ofrece sin decir cuándo
+  usarla; ya pasaba con la 1.5.1 (el «Hola» de las 22:45 en la clase). **Queda
+  pendiente** un DM con una pregunta para ver la respuesta sin asteriscos, y
+  un arreglo del prompt.
+
+### Qué sigue
+
+Que el agente no se quede callado ante un saludo; después la 028 (pulido
+visual).

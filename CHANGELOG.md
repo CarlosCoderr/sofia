@@ -21,6 +21,18 @@ instalación que no toque sus variables.
   cuenta Business de prueba está en revisión.
 - **Migración `0018_canal_tiktok`**: crea la tabla `tiktok_credentials`.
   Aditiva; corre sola al arrancar y queda vacía si no usas el canal.
+- **Importar contactos** (027). En Contactos, «Importar»: un CSV con una
+  columna de nombre y una de teléfono (con código de país). Se lee en tu
+  navegador y te enseña qué va a entrar y qué se queda fuera, con su motivo,
+  antes de crear nada. No duplica ni le cambia el nombre a quien ya existía, y
+  no crea conversaciones ni leads. Hasta 2,000 renglones por archivo.
+- **Contactos «sin agente»** (027). Una casilla al importar, y otra en «Editar»
+  de cada contacto: el agente no le responde a esa persona. Sus mensajes
+  llegan a la bandeja y los atiendes tú; vale para el agente incluido y para un
+  cerebro por despacho. Pensado para clientes o miembros que ya son tuyos.
+- **Migración `0019_contact_ai_paused`**: una columna en `contact`, con
+  valor por defecto. Aditiva; corre sola al arrancar y deja a todos tus
+  contactos con agente, como estaban.
 - **Eliminar una conversación** (026). En la bandeja, al fondo de Detalles:
   se borran los mensajes, sus adjuntos (también el archivo) y la ficha; el
   contacto conserva sus notas y su etapa, salvo que marques «Borrar también el
