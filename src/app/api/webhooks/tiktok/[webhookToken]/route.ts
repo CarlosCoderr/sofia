@@ -5,8 +5,8 @@ import {
   channelDisabledResponse,
   isChannelEnabled,
 } from "@/server/channels/enabled";
-import { isValidZernioSignature, zernioSignatureFrom } from "@/server/zernio";
-import { processZernioPayload, resolveZernioSecret } from "@/server/zernio/dispatch";
+import { zernioSignatureFrom } from "@/server/zernio";
+import { isAuthenticZernioDelivery, processZernioPayload } from "@/server/zernio/dispatch";
 
 /**
  * 022 — Webhook público del canal de TikTok.
@@ -51,11 +51,10 @@ export async function POST(req: Request, { params }: Params) {
     return Response.json({ received: true });
   }
 
-  // La firma se valida contra el secreto de ESTA cuenta, que hay que resolver
-  // leyendo el cuerpo primero. Sin esta capa, quien conozca la URL puede
+  // La firma se valida contra los secretos de la organización dueña de ESTA
+  // cuenta, que hay que resolver leyendo el cuerpo primero (023). Sin esta capa, quien conozca la URL puede
   // inyectar mensajes falsos y hacer que el agente conteste de verdad.
-  const { secret } = await resolveZernioSecret(rawBody);
-  if (!isValidZernioSignature(rawBody, zernioSignatureFrom(req.headers), secret)) {
+  if (!(await isAuthenticZernioDelivery(rawBody, zernioSignatureFrom(req.headers)))) {
     return new Response(null, { status: 401 });
   }
 

@@ -1,12 +1,23 @@
-import type { Channel } from "@/lib/channels";
 import { isChannelEnabled } from "@/server/channels/enabled";
-import { getInstagramCredentialsByAccountRef } from "@/server/instagram/credentials";
 import { processZernioEvent } from "@/server/instagram/ingest";
-import { getMessengerCredentialsByAccountRef } from "@/server/messenger/credentials";
 import { processZernioMessengerEvent } from "@/server/messenger/ingest";
-import { getTiktokCredentialsByAccountRef } from "@/server/tiktok/credentials";
 import { processZernioTiktokEvent, zernioPlatform } from "@/server/tiktok/ingest";
-import { parseZernioEvent, type ZernioEvent } from "@/server/zernio";
+import { webhookVerifyToken } from "@/server/whatsapp/webhook-url";
+import {
+  isValidZernioSignatureAny,
+  parseZernioEvent,
+  type ZernioEvent,
+} from "@/server/zernio";
+import {
+  findZernioConnection,
+  healZernioAccountRef,
+  storedZernioSecrets,
+} from "@/server/zernio/conexiones";
+import type { ZernioChannel } from "@/server/zernio/cuentas";
+import {
+  WEBHOOKS_RECHECK_MS,
+  webhookSecretsFromZernio,
+} from "@/server/zernio/webhooks";
 
 /**
  * 017 — Reparto de un evento de Zernio al canal que le toca.
@@ -23,7 +34,7 @@ import { parseZernioEvent, type ZernioEvent } from "@/server/zernio";
  */
 
 /** A qué canal pertenece un evento, o null si no es de ninguno nuestro. */
-export function zernioTargetChannel(payload: unknown): Channel | null {
+export function zernioTargetChannel(payload: unknown): ZernioChannel | null {
   const evt = payload as ZernioEvent | null;
   if (!evt || typeof evt !== "object") return null;
   const platform = zernioPlatform(evt);
@@ -34,28 +45,46 @@ export function zernioTargetChannel(payload: unknown): Channel | null {
 }
 
 /**
- * El secreto de firma de la cuenta que manda el evento, buscándolo en el canal
- * que corresponda. Se resuelve ANTES de procesar, leyendo solo el cuerpo: la
- * firma se valida contra el secreto de ESA cuenta, no uno global.
+ * 023 — ¿Esta entrega la firmó Zernio para esta instancia?
+ *
+ * El secreto es del WEBHOOK, no del canal: un webhook de Zernio sirve a todas
+ * las cuentas de su llave y firma con uno solo. Por eso vale cualquiera de los
+ * secretos guardados en los canales por Zernio de la organización, y si
+ * ninguno coincide (o no hay), los de los webhooks de Zernio que apuntan aquí,
+ * leídos con la llave ya guardada. Así un secreto mal capturado deja de tumbar
+ * un canal, y uno que nunca se capturó se exige igual. Esa lectura se guarda
+ * unos minutos; si la firma no coincide con lo guardado se relee, como mucho
+ * una vez por minuto, por si el secreto cambió en Zernio.
+ *
+ * Se resuelve ANTES de procesar y sin escribir nada. Un evento sin cuenta, o
+ * de una cuenta que nadie conectó aquí, no tiene contra qué compararse y pasa:
+ * `processZernioPayload` lo descarta sin ingerir nada. Sin ningún secreto en
+ * ningún lado la capa queda apagada, como siempre, y protege el segmento
+ * secreto de la URL.
  */
-export async function resolveZernioSecret(
-  rawBody: string
-): Promise<{ secret: string | null; accountRef: string | null; channel: Channel | null }> {
+export async function isAuthenticZernioDelivery(
+  rawBody: string,
+  signature: string | null
+): Promise<boolean> {
   const evt = parseZernioEvent(rawBody);
-  const accountRef = evt?.account?.id ?? evt?.account?.accountId ?? null;
   const channel = zernioTargetChannel(evt);
-  if (!accountRef) return { secret: null, accountRef: null, channel };
+  if (!evt || !channel) return true;
+  const found = await findZernioConnection(channel, evt.account);
+  if (!found) return true;
 
-  const creds =
-    channel === "messenger"
-      ? await getMessengerCredentialsByAccountRef(accountRef)
-      : channel === "instagram"
-        ? await getInstagramCredentialsByAccountRef(accountRef)
-        : channel === "tiktok"
-          ? await getTiktokCredentialsByAccountRef(accountRef)
-          : null;
-
-  return { secret: creds?.webhookSecret ?? null, accountRef, channel };
+  const stored = await storedZernioSecrets(found.connection.organizationId);
+  if (stored.length > 0 && isValidZernioSignatureAny(rawBody, signature, stored)) {
+    return true;
+  }
+  const { token } = found.connection;
+  const segment = webhookVerifyToken();
+  const remote = await webhookSecretsFromZernio(token, segment);
+  if (remote.length > 0 && isValidZernioSignatureAny(rawBody, signature, remote)) {
+    return true;
+  }
+  const fresh = await webhookSecretsFromZernio(token, segment, WEBHOOKS_RECHECK_MS);
+  if (stored.length === 0 && fresh.length === 0) return true;
+  return fresh.length > 0 && isValidZernioSignatureAny(rawBody, signature, fresh);
 }
 
 /**
@@ -72,6 +101,10 @@ export async function processZernioPayload(payload: unknown): Promise<void> {
     );
     return;
   }
+
+  // 023: una conexión guardada con el id del perfil se corrige aquí, ya con
+  // la firma verificada, y el canal la encuentra por el id de la cuenta.
+  await healZernioAccountRef(channel, (payload as ZernioEvent).account);
 
   if (channel === "messenger") await processZernioMessengerEvent(payload);
   else if (channel === "tiktok") await processZernioTiktokEvent(payload);

@@ -21,6 +21,7 @@ export default function SettingsLayout({
         <SettingsNav
           agenda={agendaEnabled()}
           atribucion={atribucionEnabled()}
+          instagram={isChannelEnabled("instagram")}
           messenger={isChannelEnabled("messenger")}
           tiktok={isChannelEnabled("tiktok")}
         />

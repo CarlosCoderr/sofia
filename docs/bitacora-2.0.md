@@ -273,3 +273,76 @@ instalación de la clase.
 ### Qué sigue
 
 Poner la 022 al día con `main` y empezar la 023 (Ajustes → Canales).
+
+## 2026-10-13 — 023: Ajustes → Canales y arreglos de Zernio
+
+PR #115. Carril ligero, sin migración. Spec escrita antes del código
+(`specs/023-ajustes-canales/spec.md`).
+
+También se mergeó la 022 (PR #112) con su prueba en vivo **pendiente de
+verificación humana**: TikTok no entrega mensajes por API a la cuenta personal
+de prueba. El canal va apagado por defecto y el CHANGELOG lo dice.
+
+### Qué se probó
+
+| Qué | Resultado |
+|---|---|
+| Gates (typecheck, lint, unitarias, build) | Verde; 1,069 unitarias |
+| `scripts/e2e-canales.mjs` (nuevo) | 73/73, en una base nueva y repetido sobre la misma |
+| `e2e-messenger` · `e2e-tiktok` | 42/42 · 52/52 |
+| `e2e-despacho` | 94/94 con cerebro, 14/14 con el agente incluido |
+| `e2e-selftest` | 213/213 |
+| Interfaz en local | Estado, Instagram, Messenger y TikTok en claro y oscuro; Estado e Instagram en móvil (sin desbordar); elegir entre varias cuentas; reparar el webhook. Capturas con Playwright |
+
+El guion encontró un fallo de diseño antes de salir: con la lectura de los
+webhooks de Zernio guardada 10 minutos, un secreto que cambiara en Zernio
+dejaba al CRM rechazando entregas todo ese tiempo. Ahora, si la firma no
+coincide, se relee como mucho una vez por minuto (`WEBHOOKS_RECHECK_MS`), con
+su prueba unitaria.
+
+### En vivo (instancia `vocero-clase`, imagen `1.6.0-rc.1`)
+
+Para probar una rama en una instancia que corre desde imagen se publicó un
+**prelanzamiento**: tag `v1.6.0-rc.1` sobre el commit `53afca9` de la rama.
+Publica `ghcr.io/kevinrivm/vocero-crm:1.6.0-rc.1`; `latest` y `1.5.1` no se
+movieron (se comprobó por digest). `/api/health` sigue diciendo `1.5.1` porque
+`package.json` no se tocó: lo que distingue la imagen es el commit.
+
+Con la llave real de Zernio y las cuentas de Kevin:
+
+- `PUT /api/settings/instagram` y `messenger` **sin `accountRef`** → 200, con
+  la misma cuenta que ya había y su nombre (Messenger no lo tenía guardado).
+- En Zernio sigue habiendo **un** webhook hacia la instancia (el que creó el
+  starter): activo, `message.received`, sus dos cuentas. Los otros cuatro
+  webhooks de la llave quedaron igual.
+- Entrega firmada con el secreto que tiene Zernio → 200; firma rota → 401;
+  sin firma → 401. El evento de prueba de Zernio llegó sin registrar fallos.
+- `GET /api/settings/channels`: los tres canales conectados, con su último
+  mensaje y cuenta y webhook sanos; sin llave ni segmento del webhook en la
+  respuesta.
+- WhatsApp: un mensaje real de la línea cliente (Evolution) entró y el agente
+  contestó (`delivered`).
+
+**Pendiente de verificación humana:** un mensaje directo real a Instagram y
+otro a la página, desde una cuenta personal, ya con esta imagen. Las pantallas
+en la instancia viva tampoco se abrieron (entrar con contraseña a un sitio que
+no es local no lo hace el asistente): se revisaron en local.
+
+### Dónde vive cada cosa
+
+| Qué | Dónde |
+|---|---|
+| Instancia | Proyecto Coolify `vocero-clase` (`yyojx68tpzqbyrlfglhstbbn`), app `3jinuviignszpotzzmvs6nrf`, etiqueta de imagen `1.6.0-rc.1` desde el 2026-10-14 00:43 UTC |
+| Credenciales del dueño de la instancia | `.env` de la carpeta del starter de Kevin; los guiones las leen de ahí (`ops/clase.mjs`) y guardan solo la cookie de sesión en el espacio de trabajo |
+| Secreto de firma de Zernio | En la columna `webhook_secret` de las credenciales de cada canal y en el webhook de Zernio. Nunca sale en una respuesta de la API. **Esa columna va sin cifrar desde la 014** (el token sí va cifrado): queda anotado para cifrarla con una migración |
+| Guiones de esta prueba | `ops/vivo-023.mjs` (`salud`, `estado`, `reconectar`, `webhook`, `firma`, `whatsapp`, `ajenos`), fuera del repo |
+| Local | Base `vocero_023_canales` en el Postgres propio (5433); `.env.e2e-canales` en el clon, ignorado por git |
+
+Visto de paso y sin tocar: la llave de Zernio de Kevin tiene un webhook activo
+de otro CRM **sin límite de cuentas**, así que también recibe los eventos de
+sus cuentas personales. Es justo el caso que el límite por cuentas de esta spec
+evita en las instalaciones nuevas.
+
+### Qué sigue
+
+024, texto social sin formato de WhatsApp y ventana humana.

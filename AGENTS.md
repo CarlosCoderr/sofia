@@ -67,7 +67,7 @@ Banderas de despliegue (apagadas por defecto; su código viaja siempre en `main`
 | Bandera | Enciende |
 |---|---|
 | `AGENDA=on` | Motor de citas: pantalla Citas, Ajustes → Agenda, `/api/bookings`, `/api/calendar/*`, `/api/bot/availability` y `/api/bot/bookings`, instrucciones de agendar en el prompt del agente (`src/server/agenda/flag.ts`) |
-| `CHANNELS=whatsapp,instagram,messenger,tiktok` | Canales extra: webhooks `/api/webhooks/ig`, `/api/webhooks/messenger` y `/api/webhooks/tiktok`, Ajustes → Messenger y Ajustes → TikTok, credenciales por canal, distintivo en la bandeja (`src/server/channels/enabled.ts`) |
+| `CHANNELS=whatsapp,instagram,messenger,tiktok` | Canales extra: webhooks `/api/webhooks/ig`, `/api/webhooks/messenger` y `/api/webhooks/tiktok`, Ajustes → Estado, Instagram, Messenger y TikTok, credenciales por canal, distintivo en la bandeja (`src/server/channels/enabled.ts`) |
 | `ATRIBUCION=on` | Guardado del `ctwa_clid`, reporte a la Conversions API de Meta, Ajustes → Anuncios y `/api/settings/capi` (`src/server/attribution/flag.ts`). El anuncio de origen se ve siempre, con o sin bandera |
 
 Apagada, cada superficie responde 404 (no 403). El despliegue en producción está en el README («Instalación»: Rutas A y B, y «Otras plataformas» con `render.yaml`, `fly.toml` y `railway.toml`) y en `INSTALL-IA.md`; no se repite aquí.
@@ -85,7 +85,7 @@ Apagada, cada superficie responde 404 (no 403). El despliegue en producción est
 | `auth/` | Registro cerrado tras la primera organización; alta del primer dueño con pipeline y perfil sembrados | `registration.ts`, `on-signup.ts` |
 | `bot/` | API de servicio para un cerebro externo: auth por `X-API-Key`, perfil, ficha, handoff, «quién responde» | `auth.ts`, `status.ts`, `profile.ts` |
 | `brains/` | 021 — El despacho hacia el cerebro: forma del evento y firma (pura; el orden de las claves es contrato), si hay despacho configurado, y el POST firmado | `contract.ts`, `config.ts`, `deliver.ts` |
-| `channels/` | Qué canales están encendidos y qué puede hacer cada uno (duración de la ventana, plantillas, longitud en bytes o caracteres, tope de mensajes desde el último entrante) | `enabled.ts`, `capabilities.ts` |
+| `channels/` | Qué canales están encendidos y qué puede hacer cada uno (duración de la ventana, plantillas, longitud en bytes o caracteres, tope de mensajes desde el último entrante). 023 — el estado de cada canal para Ajustes → Estado | `enabled.ts`, `capabilities.ts`, `status.ts` |
 | `dispatch/` | 021 — Outbox del despacho en Postgres: un despacho vivo por conversación (índice único parcial), lease, tres intentos, caída a humano; el worker en proceso y lo que la tarjeta enseña. 025 — cada despacho anota qué entrantes debe (`message_ids`) | `outbox.ts`, `worker.ts`, `encolar.ts`, `estado.ts` |
 | `dev/` | Estado en memoria de los mocks (wa, ai, zernio, zoom, google); solo con mocks activos | `wa-mock-state.ts`, `ai-mock.ts` |
 | `events/` | Bus in-process por organización que alimenta el SSE; publicar siempre tras el commit | `bus.ts` |
@@ -98,7 +98,7 @@ Apagada, cada superficie responde 404 (no 403). El despliegue en producción est
 | `onboarding/` | Guía de inicio: qué falta para que el agente conteste (perfil, IA, WhatsApp y, con `AGENDA`, agenda), los pasos que ve el dueño y si la guía es la primera pantalla (`guideFirst`) | `status.ts`, `guide.ts`, `calendar-verifiers.ts` |
 | `seed/` | Negocio demo idempotente «Ferretería El Martillo» | `demo.ts` |
 | `whatsapp/` | Credenciales cifradas, prueba de conexión y suscripción del webhook, media, plantillas | `credentials.ts`, `connect.ts`, `media.ts`, `templates.ts` |
-| `zernio/` | Transporte y firma de la API unificada de Zernio; reparte cada evento al canal que toca | `index.ts`, `dispatch.ts` |
+| `zernio/` | Transporte y firma de la API unificada de Zernio; reparte cada evento al canal que toca. 023 — resuelve la cuenta contra `GET /accounts` al guardar, da de alta el webhook limitado a las cuentas de la organización, y verifica la firma contra los secretos guardados y los que Zernio tiene para esta instancia | `index.ts`, `dispatch.ts`, `cuentas.ts`, `webhooks.ts`, `conexiones.ts`, `guardar.ts` |
 
 Sueltos: `contacts.ts` (serialización), `contact-source.ts` (fuente del prospecto), `branding.ts` (marca guardada en la organización), `health.ts` (lo que responde `/api/health`: BD, versión, banderas activas, `mediaWritable`), `media-dir.ts` (sondeo de escritura de `MEDIA_DIR`, cacheado 60 s; lo comparten el arranque y el health).
 
@@ -167,7 +167,7 @@ Documentación: README («Trae tu propio agente»), guion `tests/e2e/us-bot-api.
 
 **Despacho (CRM → cerebro)** — con `BRAIN_DISPATCH_URL`, un `POST` firmado (`X-Vocero-Signature: sha256=<HMAC-SHA256 del cuerpo crudo con BOT_API_KEY>`, `X-Vocero-Dispatch-Id`, `X-Vocero-Organization`) con la ráfaga de la conversación: `dispatchId`, `organization`, `conversation` (`channel`, ventana), `contact` (`identity`) y `messages`. 2xx = recibido; 429 y 5xx se reintentan (tres intentos); otro 4xx no, y la conversación pasa a un humano (`handoff_reason = error`). `messages` nunca viaja vacío, y un mensaje puede ser anterior a la última respuesta del cerebro (025). Contrato en `specs/021-despacho-estandar/contracts/despacho.md`, guion `tests/e2e/us-despacho.md`, arnés `scripts/e2e-despacho.mjs`.
 
-**Webhooks de entrada** — `GET`/`POST /api/webhooks/wa/[token]` (contrato en `specs/001-vocero-core/contracts/webhook.md`); `/api/webhooks/ig/[token]` y `/api/webhooks/messenger/[token]` aceptan Meta o Zernio por la misma URL y existen solo con su canal en `CHANNELS` (specs 014 y 017); `/api/webhooks/tiktok/[token]` acepta solo Zernio (spec 022). Un evento de Zernio se reparte por plataforma llegue a cuál de las tres llegue. Siempre 200 tras validar; el procesamiento es asíncrono.
+**Webhooks de entrada** — `GET`/`POST /api/webhooks/wa/[token]` (contrato en `specs/001-vocero-core/contracts/webhook.md`); `/api/webhooks/ig/[token]` y `/api/webhooks/messenger/[token]` aceptan Meta o Zernio por la misma URL y existen solo con su canal en `CHANNELS` (specs 014 y 017); `/api/webhooks/tiktok/[token]` acepta solo Zernio (spec 022). Un evento de Zernio se reparte por plataforma llegue a cuál de las tres llegue, y su firma se verifica en `isAuthenticZernioDelivery` (`src/server/zernio/dispatch.ts`): vale cualquier secreto de Zernio de la organización, o el del webhook que Zernio tiene hacia esta instancia. Siempre 200 tras validar; el procesamiento es asíncrono.
 
 **`GET /api/health`** — `{"ok":true,"version":"X.Y.Z","commit":"…","commitVerified":true|false,"features":{"agenda":bool,"channels":["whatsapp",…],"atribucion":bool},"mediaWritable":bool}`; 503 `db_unavailable` sin base. `features` sale de las mismas banderas que deciden los 404 (`AGENDA`, `CHANNELS`, `ATRIBUCION`); `mediaWritable: false` no baja `ok` ni el código. **`GET /api/events`** — SSE autenticado por sesión (`specs/001-vocero-core/contracts/sse.md`). La API interna (`specs/001-vocero-core/contracts/api.md`) no es contrato público: la consume solo la UI de este repo.
 

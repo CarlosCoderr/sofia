@@ -21,6 +21,25 @@ instalación que no toque sus variables.
   cuenta Business de prueba está en revisión.
 - **Migración `0018_canal_tiktok`**: crea la tabla `tiktok_credentials`.
   Aditiva; corre sola al arrancar y queda vacía si no usas el canal.
+- **Instagram ya tiene pantalla** (023): Configuración → Instagram. Antes el
+  canal solo se podía conectar llamando a la API a mano.
+- **Conectar por Zernio es pegar la llave** (023), en Instagram, Messenger y
+  TikTok. Vocero encuentra la cuenta con esa llave (y si hay varias, las
+  ofrece para elegir), da de alta el webhook en tu Zernio limitado a tus
+  cuentas y genera el secreto de firma. Ya no se copia un `accountId` ni se
+  captura un secreto. Arregla dos fallos silenciosos: guardar el id del perfil
+  en vez del de la cuenta (el webhook respondía 200 y cada mensaje se
+  descartaba) y tener un secreto distinto por canal (uno rechazaba todo con
+  401).
+- **Configuración → Estado** (023): todos los canales encendidos, si están
+  conectados, cuándo entró el último mensaje y, por Zernio, cómo están la
+  cuenta y el webhook, con un botón para repararlo. Aparece si tienes algún
+  canal social encendido.
+- La firma de Zernio vale con cualquiera de los secretos de tus canales y con
+  el que Zernio tenga para el webhook de esta instancia: un secreto mal
+  capturado deja de tumbar un canal.
+- Conectar Instagram pasa a ser cosa del propietario, como ya lo eran
+  Messenger y TikTok.
 - `/api/bot/messages` gana el 409 `message_limit`. En `/api/bot/context` y en
   el despacho, la ventana (`windowOpen`, `windowRemainingMs`,
   `windowExpiresAt`) es la del canal de la conversación; para WhatsApp,
