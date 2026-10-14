@@ -6,12 +6,15 @@ import {
   clasificarRespuesta,
   firmarCuerpo,
   CABECERA_DISPATCH,
+  CABECERA_EVENTO,
   CABECERA_FIRMA,
   CABECERA_ORG,
+  type EventoOlvido,
   type EventoDespacho,
   type MensajeParaEvento,
   type ResultadoEntrega,
 } from "@/server/brains/contract";
+import { leerConfigDespacho } from "@/server/brains/config";
 import type { FilaDespacho } from "@/server/dispatch/outbox";
 import { isWindowOpen, windowExpiresAt } from "@/server/inbox/window";
 import { windowMsFor } from "@/server/channels/capabilities";
@@ -304,6 +307,70 @@ export async function entregar(
         ? `el cerebro no contestó en ${Math.round((opts.timeoutMs ?? TIMEOUT_ENTREGA_MS) / 1000)} s`
         : "no se pudo conectar con el cerebro",
     };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** 026 — Lo que ve quien eliminó: si el cerebro confirmó que olvidó. */
+export type ResultadoOlvido = "no_aplica" | "avisado" | "sin_confirmar";
+
+/**
+ * No se le hace esperar a quien elimina lo que espera un despacho: quien acusa
+ * recibo de un borrado solo tiene que guardarlo, no pensar una respuesta.
+ */
+export const TIMEOUT_OLVIDO_MS = 8000;
+
+/**
+ * 026 — Le avisa al cerebro que una conversación se eliminó.
+ *
+ * Un solo intento, sin cola. El borrado en el CRM ya ocurrió y no depende de
+ * esto, y el contrato le pide al cerebro tratar un `conversation.id` nuevo
+ * para la misma persona como una conversación nueva — así un aviso perdido no
+ * deja memoria en uso, solo guardada hasta que esa persona vuelva a escribir.
+ *
+ * Sin despacho configurado no hay a quién avisar: el agente incluido no guarda
+ * nada aparte, su memoria ERAN los mensajes. Nunca lanza.
+ */
+export async function avisarOlvido(
+  evento: EventoOlvido,
+  opts: {
+    destino?: { url: string; secret: string } | null;
+    timeoutMs?: number;
+    fetchImpl?: typeof fetch;
+  } = {}
+): Promise<ResultadoOlvido> {
+  const config = leerConfigDespacho();
+  const destino =
+    opts.destino !== undefined
+      ? opts.destino
+      : config.active
+        ? { url: config.url, secret: config.secret }
+        : null;
+  if (!destino) return "no_aplica";
+
+  // Se serializa UNA vez y se firma ese string, igual que un despacho.
+  const cuerpo = JSON.stringify(evento);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), opts.timeoutMs ?? TIMEOUT_OLVIDO_MS);
+  try {
+    const res = await (opts.fetchImpl ?? fetch)(destino.url, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        [CABECERA_FIRMA]: firmarCuerpo(cuerpo, destino.secret),
+        [CABECERA_EVENTO]: evento.type,
+        [CABECERA_ORG]: evento.organization.slug ?? evento.organization.id,
+      },
+      redirect: "manual",
+      cache: "no-store",
+      body: cuerpo,
+      signal: controller.signal,
+    });
+    await res.body?.cancel().catch(() => {});
+    return res.status >= 200 && res.status < 300 ? "avisado" : "sin_confirmar";
+  } catch {
+    return "sin_confirmar";
   } finally {
     clearTimeout(timer);
   }
