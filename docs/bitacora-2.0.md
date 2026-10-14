@@ -418,3 +418,72 @@ cada 10 minutos por IP: correr más de ocho seguidos contra el mismo proceso da
 
 026, eliminar conversación (ciclo completo: evento `conversation.deleted` en
 el contrato del despacho).
+
+## 2026-10-13 — 026: eliminar una conversación
+
+PR #117. Ciclo completo: spec, plan y tareas antes del código, y enmienda del
+contrato del despacho (`specs/021-despacho-estandar/contracts/despacho.md`:
+evento `conversation.deleted` y la regla del `conversation.id` nuevo). **Sin
+migración**: en el raíz las foráneas ya caen en cascada o quedan en NULL donde
+hace falta; el módulo solo añade lo que una cascada no hace (adjuntos, ficha y
+la cita por venir).
+
+### Qué se probó
+
+| Qué | Resultado |
+|---|---|
+| Gates (typecheck, lint, unitarias, build) | Verde; 1,104 unitarias |
+| Prueba gemela del contrato (`tests/unit/olvido-contrato.test.ts`) | El cuerpo y la firma coinciden byte a byte con `nea-agent/tests/test_olvido.py` |
+| `scripts/e2e-eliminar.mjs` (nuevo) | 56/56 con cerebro y `AGENDA=on`; 40/40 sin despacho con agenda; 31/31 sin agenda |
+| `e2e-despacho` | 94/94 con cerebro, 14/14 con el agente incluido |
+| `e2e-ventana-social` · `e2e-canales` · `e2e-messenger` · `e2e-tiktok` | 53/53 · 73/73 · 42/42 · 52/52 |
+| `e2e-selftest` | 213/213 |
+| Bandeja en local | La entrada al fondo de Detalles y el diálogo, con y sin la casilla, en claro y oscuro; Escape cancela; un miembro del equipo no ve la opción |
+
+Dos cosas del arnés, no del producto:
+
+- `e2e-tiktok` leía la conversación antes de que la ingesta sellara
+  `lastInboundAt` y en un servidor frío fallaba el check de las 30 horas. Ahora
+  espera, igual que `e2e-ventana-social`.
+- El selftest con `AGENDA=on` dio 5 fallos de Zoom en una corrida: el entorno
+  de esa corrida no apuntaba al simulador de Zoom y la app le habló al Zoom
+  real. Con su entorno de siempre da 213/213.
+
+### En vivo (instancia `vocero-clase`, imagen `1.6.0-rc.3`)
+
+Tag `v1.6.0-rc.3` sobre el commit `771bfde`; la instancia lo corre desde el
+2026-10-14 01:49 UTC.
+
+**No se borró nada de nadie.** `ops/vivo-026.mjs` crea dos conversaciones
+sintéticas de Instagram —remitentes que no existen, con el mensaje fechado
+hace 8 días para que el agente no pudiera enviar nada— entregando eventos
+firmados con el secreto que Zernio tiene para la instancia, y las elimina:
+
+- A, alcance `hilo`: 200, sale de la bandeja, sus mensajes ya no existen, el
+  contacto se queda con su etapa, borrarla otra vez da 404. Al «volver a
+  escribir» es otra conversación del mismo contacto, que se limpia con
+  `?contacto=1`.
+- B, alcance `contacto`: 200, conversación y contacto dejan de existir.
+- `agente: "no_aplica"`: la instancia no tiene despacho.
+- Al terminar, la bandeja tiene las mismas 4 conversaciones que antes y ningún
+  rastro de la prueba. El agente no le escribió a nadie.
+
+**No se probó en vivo** el aviso a un cerebro de verdad: la instancia usa el
+agente incluido, y Nea 1.x frente al raíz no recibe despachos (eso llega con
+nea-agent#37, en la 2.0). Lo cubren el guion (un cerebro de prueba que verifica
+la firma) y la prueba gemela. Nea 1.1 sí olvida por la otra vía del contrato:
+al ver un `conversation.id` nuevo para la misma persona empieza de cero
+(`_olvidar_si_es_otra` en su `turn.py`). **Pendiente de verificación humana:**
+abrir el diálogo en la bandeja de la instancia.
+
+### Dónde vive cada cosa
+
+| Qué | Dónde |
+|---|---|
+| Instancia | La misma; etiqueta de imagen `1.6.0-rc.3` |
+| Guion de esta prueba | `ops/vivo-026.mjs`, fuera del repo |
+| Local | Base `vocero_026_eliminar` en el Postgres propio (5433); `.env.e2e-eliminar` (cerebro y agenda) y `.env.e2e-eliminar-incluido` en el clon, ignorados por git |
+
+### Qué sigue
+
+027, importar contactos desde un CSV.

@@ -33,4 +33,4 @@ Spec: [spec.md](spec.md) · Plan: [plan.md](plan.md).
 ## Cierre
 
 - [x] T017 `AGENTS.md`, `CHANGELOG.md`, `README.md`, `specs/README.md`
-- [ ] T018 Prueba en vivo y bitácora
+- [x] T018 Prueba en vivo y bitácora

@@ -5,7 +5,7 @@
 **Created**: 2026-10-13
 
 **Status**: Especificada antes de escribir código. Implementada; gates y
-guiones E2E en verde.
+guiones E2E en verde. Probada en vivo con la imagen `1.6.0-rc.3` (bitácora).
 
 **Input**: quinta spec de la 1.6.0 (`PLAN-2.0.md`, aprobado por el dueño el
 2026-10-13). Puerto de Vocero Cloud #106 (`fdf3c17`): `DELETE
