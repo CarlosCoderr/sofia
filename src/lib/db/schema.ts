@@ -550,8 +550,16 @@ export const instagramCredentials = pgTable(
     tokenCipher: text("token_cipher").notNull(),
     tokenIv: text("token_iv").notNull(),
     tokenTag: text("token_tag").notNull(),
-    /** Secreto HMAC de las entregas (Zernio); null en modo Meta. */
+    /**
+     * 030 — Obsoleta: el secreto iba en claro. Nada la escribe; el arranque
+     * la cifra en las columnas de abajo y la deja en nulo. Se quita en una
+     * versión mayor (spec 030, D6).
+     */
     webhookSecret: text("webhook_secret"),
+    /** 030 — Secreto HMAC de las entregas de Zernio, cifrado como el token. */
+    webhookSecretCipher: text("webhook_secret_cipher"),
+    webhookSecretIv: text("webhook_secret_iv"),
+    webhookSecretTag: text("webhook_secret_tag"),
     status: text("status", { enum: ["connected", "reconnect_required"] })
       .notNull()
       .default("connected"),
@@ -594,8 +602,16 @@ export const messengerCredentials = pgTable(
     tokenCipher: text("token_cipher").notNull(),
     tokenIv: text("token_iv").notNull(),
     tokenTag: text("token_tag").notNull(),
-    /** Secreto HMAC de las entregas (Zernio); null en modo Meta. */
+    /**
+     * 030 — Obsoleta: el secreto iba en claro. Nada la escribe; el arranque
+     * la cifra en las columnas de abajo y la deja en nulo. Se quita en una
+     * versión mayor (spec 030, D6).
+     */
     webhookSecret: text("webhook_secret"),
+    /** 030 — Secreto HMAC de las entregas de Zernio, cifrado como el token. */
+    webhookSecretCipher: text("webhook_secret_cipher"),
+    webhookSecretIv: text("webhook_secret_iv"),
+    webhookSecretTag: text("webhook_secret_tag"),
     status: text("status", { enum: ["connected", "reconnect_required"] })
       .notNull()
       .default("connected"),
@@ -632,8 +648,16 @@ export const tiktokCredentials = pgTable(
     tokenCipher: text("token_cipher").notNull(),
     tokenIv: text("token_iv").notNull(),
     tokenTag: text("token_tag").notNull(),
-    /** Secreto HMAC de las entregas de Zernio; sin él protege solo la URL. */
+    /**
+     * 030 — Obsoleta: el secreto iba en claro. Nada la escribe; el arranque
+     * la cifra en las columnas de abajo y la deja en nulo. Se quita en una
+     * versión mayor (spec 030, D6).
+     */
     webhookSecret: text("webhook_secret"),
+    /** 030 — Secreto HMAC de las entregas de Zernio, cifrado como el token. */
+    webhookSecretCipher: text("webhook_secret_cipher"),
+    webhookSecretIv: text("webhook_secret_iv"),
+    webhookSecretTag: text("webhook_secret_tag"),
     status: text("status", { enum: ["connected", "reconnect_required"] })
       .notNull()
       .default("connected"),

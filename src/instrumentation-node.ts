@@ -3,6 +3,7 @@ import { getDb, schema } from "@/lib/db";
 import { mediaDirStatus } from "@/server/media-dir";
 import { leerConfigDespacho } from "@/server/brains/config";
 import { iniciarWorker, tanda } from "@/server/dispatch/worker";
+import { cifrarSecretosEnClaro } from "@/server/zernio/secreto-guardado";
 
 /**
  * 008 — Aviso al arranque si MEDIA_DIR no es escribible. Sin esto, el primer
@@ -52,6 +53,27 @@ export async function cleanupOrphanRuns(): Promise<void> {
   } catch (err) {
     // La BD puede no estar lista aún (migraciones corren antes del server).
     console.error("[boot] limpieza de corridas huérfanas falló:", err);
+  }
+}
+
+/**
+ * 030 — Cifra los secretos de firma de Zernio que una versión anterior guardó
+ * en claro. Va aquí y no en `migrate.mjs` porque cifrar necesita la
+ * `ENCRYPTION_KEY` validada y el mismo `encryptSecret` que el token, y porque
+ * así corre también con `next dev` (spec 030, D3). Nunca tumba el arranque:
+ * mientras una fila no esté cifrada, su secreto se sigue leyendo (D5).
+ */
+export async function encryptLegacySecrets(): Promise<void> {
+  try {
+    const cifrados = await cifrarSecretosEnClaro();
+    if (cifrados > 0) {
+      console.log(`[boot] ${cifrados} secreto(s) de firma de Zernio cifrado(s) en reposo`);
+    }
+  } catch (err) {
+    console.error(
+      "[boot] no se pudieron cifrar los secretos de firma de Zernio guardados en claro; se reintenta en el próximo arranque:",
+      err instanceof Error ? err.message : "error desconocido"
+    );
   }
 }
 

@@ -46,6 +46,17 @@ instalación que no toque sus variables.
 - **Migración `0019_contact_ai_paused`**: una columna en `contact`, con
   valor por defecto. Aditiva; corre sola al arrancar y deja a todos tus
   contactos con agente, como estaban.
+- **El secreto de firma de Zernio, cifrado** (030). Instagram, Messenger y
+  TikTok guardaban en claro el secreto con el que se comprueba que un webhook
+  viene de Zernio; ahora va cifrado con tu `ENCRYPTION_KEY`, como el token.
+  Quien leyera un respaldo de la base podía fabricar mensajes que el CRM
+  aceptaba como reales. No hay que reconectar nada.
+- **Migración `0020_secreto_zernio_cifrado`**: tres columnas nulas en cada
+  tabla de credenciales de canal. Aditiva; corre sola al arrancar. Después,
+  al arrancar la app, los secretos que ya tenías se cifran y la columna vieja
+  queda vacía; el log dice cuántos (`[boot] N secreto(s) de firma de Zernio
+  cifrado(s) en reposo`). La columna vieja se quita en una versión mayor: no
+  saltes de una 1.5 directo a esa, pasa antes por la 1.6.
 - **Eliminar una conversación** (026). En la bandeja, al fondo de Detalles:
   se borran los mensajes, sus adjuntos (también el archivo) y la ficha; el
   contacto conserva sus notas y su etapa, salvo que marques «Borrar también el

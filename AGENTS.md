@@ -99,7 +99,7 @@ Apagada, cada superficie responde 404 (no 403). El despliegue en producción est
 | `onboarding/` | Guía de inicio: qué falta para que el agente conteste (perfil, IA, WhatsApp y, con `AGENDA`, agenda), los pasos que ve el dueño y si la guía es la primera pantalla (`guideFirst`) | `status.ts`, `guide.ts`, `calendar-verifiers.ts` |
 | `seed/` | Negocio demo idempotente «Ferretería El Martillo» | `demo.ts` |
 | `whatsapp/` | Credenciales cifradas, prueba de conexión y suscripción del webhook, media, plantillas | `credentials.ts`, `connect.ts`, `media.ts`, `templates.ts` |
-| `zernio/` | Transporte y firma de la API unificada de Zernio; reparte cada evento al canal que toca. 023 — resuelve la cuenta contra `GET /accounts` al guardar, da de alta el webhook limitado a las cuentas de la organización, y verifica la firma contra los secretos guardados y los que Zernio tiene para esta instancia | `index.ts`, `dispatch.ts`, `cuentas.ts`, `webhooks.ts`, `conexiones.ts`, `guardar.ts` |
+| `zernio/` | Transporte y firma de la API unificada de Zernio; reparte cada evento al canal que toca. 023 — resuelve la cuenta contra `GET /accounts` al guardar, da de alta el webhook limitado a las cuentas de la organización, y verifica la firma contra los secretos guardados y los que Zernio tiene para esta instancia. 030 — el secreto de firma se guarda cifrado, como el token; el arranque cifra el que una versión anterior dejó en claro | `index.ts`, `dispatch.ts`, `cuentas.ts`, `webhooks.ts`, `conexiones.ts`, `guardar.ts`, `secreto-guardado.ts` |
 
 Sueltos: `contacts.ts` (serialización), `contact-source.ts` (fuente del prospecto), `branding.ts` (marca guardada en la organización), `health.ts` (lo que responde `/api/health`: BD, versión, banderas activas, `mediaWritable`), `media-dir.ts` (sondeo de escritura de `MEDIA_DIR`, cacheado 60 s; lo comparten el arranque y el health).
 
@@ -113,8 +113,8 @@ Sueltos: `contacts.ts` (serialización), `contact-source.ts` (fuente del prospec
 | `src/app/api/` | Route handlers: `auth/[...all]` (Better Auth) · `conversations`, `contacts`, `pipeline`, `kb`, `agent`, `lab`, `templates`, `analytics`, `bookings`, `calendar`, `media`, `branding`, `seed`, `onboarding/status` (sesión + organización) · `settings/*` (WhatsApp, webhook, marca, equipo, IA —`ai`, con `ai/test` y `ai/models`—, capi, zoom, google, instagram, messenger, tiktok) · `bot/*` (X-API-Key) · `webhooks/{wa,ig,messenger,tiktok}/[webhookToken]` (públicos) · `events` (SSE) · `health` · `dev/*` (mocks, 404 en producción) |
 | `tests/` | `unit/*.test.ts` (Vitest sin base de datos: módulos puros, guardarraíles que escanean `src/`, contratos) y `e2e/*.md` (guiones por historia con criterios de aceptación) |
 | `scripts/` | `e2e-*.mjs` (arneses de los guiones), `migrate.mjs` (migrador del contenedor), `seed/demo.ts`, `reset-password.mjs` (imprime el `UPDATE`, no toca la BD), `screenshots.mjs` |
-| `drizzle/` | `0000…0018_*.sql` + `meta/` (snapshots y `_journal.json`). Se genera, nunca se edita a mano. A la imagen viajan solo los `.sql` y `_journal.json`: el migrador no abre los snapshots (`.dockerignore`) |
-| `specs/` | Specs por feature (001, 002, 003, 014–022, 025) con sus contratos; `specs/README.md` explica qué hay y qué no |
+| `drizzle/` | `0000…0020_*.sql` + `meta/` (snapshots y `_journal.json`). Se genera, nunca se edita a mano. A la imagen viajan solo los `.sql` y `_journal.json`: el migrador no abre los snapshots (`.dockerignore`) |
+| `specs/` | Specs por feature (001, 002, 003, 014–030) con sus contratos; `specs/README.md` explica qué hay y qué no |
 | `docs/` | ADR-001/002, `agenda-conectores.md`, `atribucion-capi.md`, capturas del README. (`getting-started.md`, `sdd-workflow.md`, `three-agent-architecture.md` y `mcp-setup.md` describen el starter de Claude Code, no Vocero) |
 
 ## Flujo de una petición: un mensaje de WhatsApp
@@ -145,6 +145,7 @@ Con `BRAIN_DISPATCH_URL` y `BOT_API_KEY`, el paso 3 no piensa: `ai/trigger.ts` e
 - **Módulos opcionales** van tras bandera, apagados por defecto, con superficie en 404 y migración aplicada igual. Nunca en una rama aparte.
 - **UI con tokens**: colores por variables de `globals.css` mapeadas en `tailwind.config.ts` (`bg-background`, `text-foreground`, `bg-primary`, `text-muted-foreground`…); nada de `text-white` ni hex sueltos salvo colores de marca de terceros. `tests/unit/contraste-temas.test.ts` mide los tokens reales en ambos temas. White-label: ningún «Vocero» cableado en la UI.
 - **`route.ts` solo exporta handlers** (`GET`, `POST`… y `dynamic`): la lógica va en `src/server/` para poder probarla; Next rechaza otros exports al construir.
+- **Secretos de canal en reposo** (030): el secreto de firma de Zernio de Instagram, Messenger y TikTok solo se escribe con `columnasDelSecreto` y se lee con `secretoDeLaFila` (`src/server/zernio/secreto-guardado.ts`); la columna `webhook_secret` es obsoleta, nada la escribe y se quita en una versión mayor. Un secreto nuevo en cualquier tabla va en columnas `*_cipher`, `*_iv`, `*_tag` con `src/lib/crypto`, nunca en claro.
 - **Credenciales nuevas**: placeholder `REEMPLAZA_...` en `.env.example` con guía inline; en producción van en la plataforma (runtime, no build).
 
 ## Contratos públicos

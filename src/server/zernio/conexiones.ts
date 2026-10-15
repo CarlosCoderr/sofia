@@ -23,6 +23,7 @@ import {
   type WebhookChannel,
 } from "@/server/whatsapp/webhook-url";
 import { fetchZernioAccounts, type ZernioChannel } from "@/server/zernio/cuentas";
+import { columnasDelSecreto } from "@/server/zernio/secreto-guardado";
 import {
   cachedZernioWebhooks,
   ensureZernioWebhook,
@@ -148,12 +149,18 @@ export async function findZernioConnection(
   return porPerfil ? { connection: porPerfil, viaProfile: true } : null;
 }
 
+/** 030 — El secreto se escribe cifrado (`columnasDelSecreto`), nunca en claro. */
 async function update(
   channel: ZernioChannel,
   id: string,
   set: { accountRef?: string; webhookSecret?: string }
 ): Promise<void> {
-  const values = { ...set, updatedAt: new Date() };
+  const { webhookSecret, ...resto } = set;
+  const values = {
+    ...resto,
+    ...(webhookSecret !== undefined ? columnasDelSecreto(webhookSecret) : {}),
+    updatedAt: new Date(),
+  };
   const db = getDb();
   if (channel === "instagram") {
     await db
