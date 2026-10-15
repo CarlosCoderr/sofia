@@ -669,3 +669,43 @@ Hecha el 2026-10-15, con la autorización de Kevin para el merge. Tag
 ### Qué sigue
 
 Tag `v1.6.0` y starter 2.2.0.
+
+## 2026-10-14 — Publicación de 1.6.0 y starter 2.3.0
+
+Autorizado por Kevin en el chat («el tag sí publícalo y actualiza el
+starter»), después de probar él mismo la guía de 18 puntos en `vocero-clase`
+con la imagen `rc.7`: todo bien.
+
+- **PR #103 cerrado sin mergear** por decisión de Kevin: el registro de
+  llamadas al proveedor rompe el minimalismo; lo que pedía el #85 ya lo cubren
+  el estado de la llave en Ajustes → IA y el aviso de arriba.
+- **PR #123** (`release/1.6.0`): versión `1.6.0`, CHANGELOG con «Actualizar
+  desde 1.5.1», imagen `1.6.0` en README, INSTALL-IA, docker-compose y los
+  manifiestos de Render, Fly y Railway (la prueba `manifests-plataformas` lo
+  exige). Gates verdes, CI verde.
+- **Tag `v1.6.0`** sobre `da32409` → imagen `ghcr.io/kevinrivm/vocero-crm:1.6.0`;
+  `latest` apunta al mismo digest. Release de GitHub «Vocero CRM 1.6.0 —
+  multicanal» con las notas del CHANGELOG.
+- **`vocero-clase`** pasa a la estable: deploy `cet0mi9crrphwrwknqofgfun` de
+  la app `3jinuviignszpotzzmvs6nrf`; `/api/health` → `1.6.0` · `da32409`;
+  firma de Zernio 200/401/401 y el evento de prueba de Zernio sin fallos.
+- **Starter 2.3.0** (copia maestra en `Vocero-cloud astra/vocero-starter-v2`,
+  sin remoto; tag `v2.3.0`, zip `vocero-starter-v2.3.0.zip` sin `.env`): fija
+  Vocero 1.6.0 + Nea 1.1.0 y pone al día los textos de límites de la 1.5.
+  Se revisó que su `canales.mjs webhook` no duplique el webhook que el CRM
+  1.6 da de alta al guardar cada canal: los dos usan el nombre
+  `vocero-<dominio>` y el guion actualiza el que encuentra. `plan` y
+  `estado` del guion nuevo, contra `vocero-clase`, en verde. TikTok no entra
+  al starter todavía (falta su prueba real); queda cómo encenderlo a mano.
+- El `.env` del starter de la clase (`Downloads/vocero-starter-v2`) pasa a
+  `VOCERO_CRM_VERSION="1.6.0"`, la que corre la instancia.
+
+### Pendiente
+
+- TikTok (022) con un mensaje real cuando TikTok apruebe la cuenta Business.
+- PR #118 («Merge with vocero crm», rama `develop`): no es de esta sesión;
+  sin tocar hasta que Kevin diga qué es.
+
+### Qué sigue
+
+La 2.0.0 del plan: Nea recibe el despacho también contra el raíz (nea #37).
