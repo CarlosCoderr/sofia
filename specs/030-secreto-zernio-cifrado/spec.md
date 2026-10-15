@@ -4,7 +4,8 @@
 
 **Created**: 2026-10-14
 
-**Status**: Especificada antes de escribir código.
+**Status**: Especificada antes de escribir código. Implementada; gates y
+guiones E2E en verde. Probada en vivo con la imagen `1.6.0-rc.8` (bitácora).
 
 **Input**: hallazgo de la 023 (2026-10-13), anotado en
 `docs/bitacora-2.0.md`: la columna `webhook_secret` de

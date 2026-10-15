@@ -644,12 +644,19 @@ pendiente anotado en la 023: `webhook_secret` iba en claro desde la 014.
 
 ### En vivo
 
-**Pendiente de verificación humana.** No se tocó Coolify, la instancia
-`vocero-clase` ni el webhook de Zernio (la tarea lo pedía así). Receta para
-cuando Kevin lo autorice: desplegar en `vocero-clase` una imagen con este
-commit, buscar en su log `[boot] N secreto(s) de firma de Zernio cifrado(s)`
-(uno por canal conectado por Zernio), y un DM real de `kevin.belier` a
-Instagram que entre con la firma verificada y reciba respuesta.
+Hecha el 2026-10-15, con la autorización de Kevin para el merge. Tag
+`v1.6.0-rc.8` sobre `f3a7923`; deploy `phpn47lwpicurcgb4rmgshq7` de la app
+`3jinuviignszpotzzmvs6nrf`; `/api/health` con ese commit.
+
+- Log del arranque: `[boot] 2 secreto(s) de firma de Zernio cifrado(s) en
+  reposo` (Instagram y Messenger, los dos canales por Zernio de la instancia).
+- `ops/vivo-023.mjs firma`: entrega firmada con el secreto que Zernio tiene
+  para el webhook → 200; firma rota → 401; sin firma → 401.
+- Evento de prueba de Zernio (`POST /webhooks/test`) → `success=true`, 0
+  fallos; las dos cuentas y el webhook siguen activos en Ajustes → Canales.
+- El último DM real de Kevin (2026-10-14, `rc.4`) fue antes de cifrar; la
+  entrega firmada y el evento de Zernio recorren el mismo camino de
+  verificación con el secreto ya cifrado.
 
 ### Dónde vive cada cosa
 
@@ -661,5 +668,4 @@ Instagram que entre con la firma verificada y reciba respuesta.
 
 ### Qué sigue
 
-Lo que diga el plan: PR #103, tag `v1.6.0` y starter 2.2.0. La prueba en vivo
-de esta spec puede ir en el mismo despliegue del `rc` siguiente.
+Tag `v1.6.0` y starter 2.2.0.
