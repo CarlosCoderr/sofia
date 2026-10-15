@@ -5,10 +5,37 @@ sigue el SemVer del [README](README.md#versiones): una menor trae funciones
 nuevas y actualizar es redesplegar. Desde 1.4.0, cada tag `vX.Y.Z` publica la
 imagen `ghcr.io/kevinrivm/vocero-crm:X.Y.Z`.
 
-## Sin publicar — camino a 1.6.0
+## 1.6.0 — 2026-10-14
 
-Lo que ya está en `main` de la 1.6.0 (multicanal). Nada de esto cambia una
-instalación que no toque sus variables.
+La versión multicanal. Instagram, Messenger y ahora TikTok llegan a la misma
+bandeja que WhatsApp, se conectan pegando la llave de Zernio y se vigilan desde
+una sola pantalla. El agente escribe como se debe en cada red y ya no se queda
+callado ante un saludo. Y llegan dos cosas que pedían los negocios con
+clientes de siempre: importar contactos y marcarlos «sin agente». Con solo
+WhatsApp encendido, todo funciona como antes.
+
+### Actualizar desde 1.5.1
+
+1. Respalda la base, como siempre.
+2. Redespliega con la imagen `1.6.0` (compose: `git pull` y
+   `docker compose up -d`; Coolify: cambia la etiqueta y redespliega). Las
+   migraciones `0018` a `0020` son aditivas y corren solas al arrancar.
+3. Si ya tenías Instagram o Messenger por Zernio, no hay que reconectar nada.
+   Al arrancar, el log dice `[boot] N secreto(s) de firma de Zernio
+   cifrado(s) en reposo`: es la 030 haciendo su trabajo, una sola vez.
+4. Para encender canales, pon `CHANNELS` (por ejemplo
+   `whatsapp,instagram,messenger,tiktok`) y **redespliega**: un reinicio no
+   carga variables nuevas. Después abre Configuración → Estado.
+5. Si tienes un cerebro externo por despacho: en Instagram y Messenger, entre
+   las 24 horas y los 7 días, `POST /api/bot/messages` ahora responde 409
+   `window_closed` a la IA; y tras eliminar una conversación llega un evento
+   `conversation.deleted` a la misma URL. Mira `type` antes de buscar
+   `messages`.
+
+TikTok está probado con el simulador y aún no con un mensaje real: la cuenta
+Business de prueba sigue en revisión.
+
+### Cambios
 
 - **Canal de TikTok** (022), opcional y apagado por defecto: con `tiktok` en
   `CHANNELS`, los mensajes directos de tu cuenta TikTok Business entran a la
