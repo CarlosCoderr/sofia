@@ -116,9 +116,9 @@ describe("barra lateral clara (.nav-panel)", () => {
 });
 
 describe("white-label: normalización", () => {
-  it("nombre vacío o nulo → default 'Vocero'; se recorta a 30", () => {
-    expect(normalizeBranding(null).name).toBe("Vocero");
-    expect(normalizeBranding({ name: "   " }).name).toBe("Vocero");
+  it("nombre vacío o nulo → el de la marca por defecto (DEFAULT_BRANDING); se recorta a 30", () => {
+    expect(normalizeBranding(null).name).toBe(DEFAULT_BRANDING.name);
+    expect(normalizeBranding({ name: "   " }).name).toBe(DEFAULT_BRANDING.name);
     expect(normalizeBranding({ name: "x".repeat(50) }).name).toHaveLength(30);
   });
 
