@@ -63,7 +63,7 @@ export function HygieneSection({
                     {data.silent.slice(0, enLista).map((l) => (
                       <li key={l.leadId} className="flex items-baseline justify-between gap-2">
                         <Link
-                          href={`/inbox?contact=${l.contactId}`}
+                          href={`/bandeja?contact=${l.contactId}`}
                           className="min-w-0 truncate text-brand-text hover:underline"
                         >
                           {l.name}
@@ -116,7 +116,7 @@ export function HygieneSection({
                       className="flex items-baseline justify-between gap-2"
                     >
                       <Link
-                        href={`/inbox?contact=${c.contactId}`}
+                        href={`/bandeja?contact=${c.contactId}`}
                         className="min-w-0 truncate text-brand-text hover:underline"
                       >
                         {c.name}

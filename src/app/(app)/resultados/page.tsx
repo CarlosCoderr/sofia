@@ -20,7 +20,7 @@ export default async function ResultsPage() {
   // El layout ya manda al login sin sesión; esto es por si la página se
   // resuelve primero.
   const session = await getSessionOrNull();
-  if (!session) redirect("/login");
+  if (!session) redirect("/iniciar-sesion");
   const [branding, timezone] = await Promise.all([
     getBranding(session.organizationId),
     businessTimezone(session.organizationId),
@@ -30,7 +30,6 @@ export default async function ResultsPage() {
       currency={branding.currency}
       agenda={agendaEnabled()}
       today={todayInTz(new Date(), timezone)}
-      timezone={timezone}
     />
   );
 }

@@ -88,7 +88,7 @@ node --env-file=.env scripts/e2e-tiktok.mjs
 
 - **La pantalla.** Con `tiktok` en `CHANNELS`, Ajustes → Canales enseña
   «TikTok»: primero las reglas de TikTok, luego el formulario y, ya conectada,
-  la URL del webhook. Sin el canal, `/settings/tiktok` da 404 y el enlace no
+  la URL del webhook. Sin el canal, `/ajustes/tiktok` da 404 y el enlace no
   existe.
 - **El distintivo.** En la bandeja, una conversación de TikTok lleva su
   mosaico negro y se puede filtrar por canal.

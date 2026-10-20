@@ -1,44 +1,50 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-
-/** FR-060/FR-081: registro cerrado tras la 1ª organización, salvo escape. */
-
-let orgCount = 0;
-
-vi.mock("@/lib/db", () => ({
-  getDb: () => ({
-    select: () => ({
-      from: () => Promise.resolve([{ n: orgCount }]),
-    }),
-  }),
-  schema: { organization: {} },
-}));
-
+import { readFileSync } from "node:fs";
 import { isPublicSignupAllowed } from "@/server/auth/registration";
+
+/**
+ * El registro por HTTP está cerrado: las cuentas se crean por backend
+ * (`pnpm crear-usuario`) o las del equipo las crea el propietario. La única
+ * apertura es ALLOW_SIGNUP=true, para los arneses de prueba.
+ */
 
 afterEach(() => vi.unstubAllEnvs());
 
-describe("registro público cerrado", () => {
-  it("instancia vacía → registro permitido (primer usuario)", async () => {
-    orgCount = 0;
-    vi.stubEnv("ALLOW_SIGNUP", "");
-    expect(await isPublicSignupAllowed()).toBe(true);
-  });
-
-  it("ya existe una organización → cerrado", async () => {
-    orgCount = 1;
+describe("registro por HTTP cerrado", () => {
+  it("por defecto está cerrado, también en una instancia vacía", async () => {
     vi.stubEnv("ALLOW_SIGNUP", "");
     expect(await isPublicSignupAllowed()).toBe(false);
   });
 
-  it("escape ALLOW_SIGNUP=true → permitido aunque exista organización", async () => {
-    orgCount = 1;
+  it("solo ALLOW_SIGNUP=true lo abre (escape para pruebas)", async () => {
     vi.stubEnv("ALLOW_SIGNUP", "true");
     expect(await isPublicSignupAllowed()).toBe(true);
   });
 
-  it("otros valores del escape NO abren el registro", async () => {
-    orgCount = 1;
-    vi.stubEnv("ALLOW_SIGNUP", "1");
-    expect(await isPublicSignupAllowed()).toBe(false);
+  it("cualquier otro valor no lo abre", async () => {
+    for (const v of ["1", "yes", "on", "TRUE", "false"]) {
+      vi.stubEnv("ALLOW_SIGNUP", v);
+      expect(await isPublicSignupAllowed(), v).toBe(false);
+    }
+  });
+});
+
+describe("no hay forma de registrarse desde la interfaz", () => {
+  it("la pantalla de registro no existe y el inicio de sesión no la enlaza", () => {
+    const login = readFileSync("src/app/(auth)/iniciar-sesion/page.tsx", "utf8");
+    expect(login).not.toContain("/registro");
+    expect(login).not.toContain("Crear la cuenta inicial");
+    expect(login).not.toContain("Primera vez");
+    expect(() => readFileSync("src/app/(auth)/registro/page.tsx", "utf8")).toThrow();
+  });
+
+  it("el cliente de autenticación ya no expone signUp", () => {
+    const client = readFileSync("src/lib/auth/client.ts", "utf8");
+    expect(client).not.toMatch(/\bsignUp\b/);
+  });
+
+  it("el hook del servidor bloquea /sign-up/email salvo bypass interno", () => {
+    const auth = readFileSync("src/lib/auth/index.ts", "utf8");
+    expect(auth).toMatch(/ctx\.path === "\/sign-up\/email"[\s\S]{0,200}isInternalSignup\(\)[\s\S]{0,120}isPublicSignupAllowed\(\)/);
   });
 });

@@ -17,7 +17,7 @@ bandera `AGENDA` decide qué mitad corre.
 
 1. `GET /api/bookings`, con o sin `from`/`to` (también mal formados), es
    **404**.
-2. La pantalla `/bookings` es 404 y la navegación no ofrece «Citas».
+2. La pantalla `/citas` es 404 y la navegación no ofrece «Citas».
 
 ## La API por rango
 
@@ -33,7 +33,7 @@ bandera `AGENDA` decide qué mitad corre.
 
 ## El calendario
 
-1. `/bookings?vista=semana&fecha=D` pinta la semana; la cita de las 10:00
+1. `/citas?vista=semana&fecha=D` pinta la semana; la cita de las 10:00
    queda a la altura de las 10:00 del negocio (no de Tokio) y la esquina dice
    «GMT-6».
 2. Una cita del Laboratorio (`is_test`) a la misma hora no se pinta; el
@@ -42,7 +42,7 @@ bandera `AGENDA` decide qué mitad corre.
    negocio; Día, Mes (cuadrícula con «Ver el día N») y Lista (`desde`/`hasta`)
    cambian la URL.
 4. Tocar la cita abre su panel con «Abrir conversación» (→
-   `/inbox?contact=…`), «Reprogramar», «Realizada», «No asistió» y «Cancelar
+   `/bandeja?contact=…`), «Reprogramar», «Realizada», «No asistió» y «Cancelar
    cita». Abrirlo NO pide disponibilidad.
 5. **Fallo 2** (antes, 12 huecos): «Reprogramar» pide la disponibilidad una
    sola vez y ofrece los huecos de toda la ventana por día (≥ 5 días, > 12

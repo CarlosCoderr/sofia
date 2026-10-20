@@ -148,8 +148,10 @@ docker compose up -d
 
 > ✅ Vocero quedó instalado en `https://<dominio>`.
 >
-> 1. Entra y **regístrate**: el primer registro crea tu organización (después
->    el registro público se cierra solo).
+> 1. **Crea tu cuenta por backend** (no hay pantalla de registro): en la
+>    terminal del contenedor corre `NEW_PASSWORD='…' node crear-usuario.mjs
+>    tu@correo.com "Tu Nombre"`. Esa primera cuenta crea tu organización; luego
+>    entra en `/iniciar-sesion`.
 > 2. Pulsa **"Cargar datos de demostración"** si quieres explorar con la
 >    Ferretería El Martillo.
 > 3. Para conectar tu WhatsApp entra a **Configuración → WhatsApp**: ahí está

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { apiError, parseBody, withAuth } from "@/lib/api";
+import { canConfigure } from "@/lib/auth/roles";
 import { agendaDisabledResponse, agendaEnabled } from "@/server/agenda/flag";
 import { googleConnector } from "@/server/agenda/connectors/google";
 import {
@@ -35,6 +36,9 @@ const credsSchema = z.object({
 
 export const PUT = withAuth(async (session, req: Request) => {
   if (!agendaEnabled()) return agendaDisabledResponse();
+  if (!canConfigure(session.role)) {
+    return apiError(403, "forbidden", "Solo el dueño o un administrador puede hacer esto");
+  }
   const body = await parseBody(req, credsSchema);
   if (!body.ok) return body.response;
 
@@ -63,6 +67,9 @@ export const PUT = withAuth(async (session, req: Request) => {
 
 export const DELETE = withAuth(async (session) => {
   if (!agendaEnabled()) return agendaDisabledResponse();
+  if (!canConfigure(session.role)) {
+    return apiError(403, "forbidden", "Solo el dueño o un administrador puede hacer esto");
+  }
   await deleteGoogleCredentials(session.organizationId);
   return Response.json({ ok: true });
 });

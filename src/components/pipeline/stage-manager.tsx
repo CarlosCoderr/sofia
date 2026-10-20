@@ -6,6 +6,8 @@ import type { StageDto } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DialogCloseButton } from "@/components/ui/dialog-close";
+import { SearchSelect } from "@/components/ui/search-select";
 
 /** Gestión de etapas: renombrar, reordenar, agregar, eliminar (con reasignación). */
 export function StageManager({
@@ -94,10 +96,11 @@ export function StageManager({
       onClick={onClose}
     >
       <div
-        className="max-h-[85dvh] w-full max-w-lg overflow-y-auto rounded-lg border bg-popover p-5 shadow-xl"
+        className="relative max-h-[85dvh] w-full max-w-lg overflow-y-auto rounded-lg border bg-popover p-5 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className="mb-4 font-semibold">Etapas del pipeline</h3>
+        <DialogCloseButton onClick={onClose} />
+        <h3 className="mb-4 pr-8 font-semibold">Etapas del pipeline</h3>
         <ul className="space-y-2">
           {sorted.map((s, i) => (
             <li key={s.id} className="flex items-center gap-2">
@@ -148,20 +151,17 @@ export function StageManager({
               &quot;{deleting.name}&quot; tiene tarjetas. Elige a dónde moverlas:
             </p>
             <div className="mt-2 flex gap-2">
-              <select
+              <SearchSelect
                 value={moveTo}
-                onChange={(e) => setMoveTo(e.target.value)}
-                className="h-9 flex-1 rounded-md border border-input bg-card px-3 text-sm"
-              >
-                <option value="">Etapa destino…</option>
-                {sorted
+                onChange={setMoveTo}
+                placeholder="Etapa destino…"
+                options={sorted
                   .filter((s) => s.id !== deleting.id)
-                  .map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}
-                    </option>
-                  ))}
-              </select>
+                  .map((s) => ({ value: s.id, label: s.name }))}
+                searchPlaceholder="Buscar etapa…"
+                className="flex-1"
+                triggerClassName="bg-card"
+              />
               <Button
                 variant="destructive"
                 size="sm"

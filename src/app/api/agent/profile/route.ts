@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { apiError, parseBody, withAuth } from "@/lib/api";
+import { canConfigure } from "@/lib/auth/roles";
 import { getDb, schema } from "@/lib/db";
 import { scoped } from "@/lib/db/tenant";
 import { estadoIaDe, mensajeDeEstado } from "@/lib/ai/provider";
@@ -42,6 +43,9 @@ const putSchema = z.object({
 });
 
 export const PUT = withAuth(async (session, req: Request) => {
+  if (!canConfigure(session.role)) {
+    return apiError(403, "forbidden", "Solo el dueño o un administrador puede hacer esto");
+  }
   const body = await parseBody(req, putSchema);
   if (!body.ok) return body.response;
 

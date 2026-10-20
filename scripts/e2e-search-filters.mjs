@@ -66,7 +66,7 @@ const page = await ctx.newPage();
 const rows = () => page.locator("ul > li button").allInnerTexts();
 
 console.log("\n== Bandeja: teclear mientras la página aún carga (el bug) ==");
-await page.goto(`${BASE}/inbox`, { waitUntil: "commit" });
+await page.goto(`${BASE}/bandeja`, { waitUntil: "commit" });
 const box = page.getByLabel("Buscar conversación");
 await box.waitFor({ timeout: 15000 });
 await box.fill(`Zoraida${S}`); // sucede ANTES de que hidrate React
@@ -140,7 +140,7 @@ await page.screenshot({ path: ".tmp/e2e-inbox.png" });
 
 console.log("\n== Contactos: búsqueda tolerante + filtro por etapa ==");
 const cp = await ctx.newPage();
-await cp.goto(`${BASE}/contacts`, { waitUntil: "domcontentloaded" });
+await cp.goto(`${BASE}/contactos`, { waitUntil: "domcontentloaded" });
 const cbox = cp.getByLabel("Buscar contacto");
 await cbox.waitFor({ timeout: 15000 });
 await cp.getByText(`Zoraida${S}`).first().waitFor({ timeout: 20000 });

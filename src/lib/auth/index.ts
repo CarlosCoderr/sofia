@@ -2,7 +2,7 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import { betterAuth } from "better-auth";
 import { APIError, createAuthMiddleware } from "better-auth/api";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { organization } from "better-auth/plugins";
+import { emailOTP, organization } from "better-auth/plugins";
 import { getDb, schema } from "@/lib/db";
 import { getEnv } from "@/lib/env";
 import { AUTH_RATE_LIMIT, checkRateLimit, clientIp } from "@/lib/rate-limit";
@@ -10,7 +10,17 @@ import {
   onUserCreated,
   resolveActiveOrganizationId,
 } from "@/server/auth/on-signup";
+import {
+  isBlockedEmailOtpPath,
+  REQUEST_RESET_PATH,
+  RESET_CODE_LENGTH,
+  RESET_CODE_MAX_ATTEMPTS,
+  RESET_CODE_TTL_SECONDS,
+  RESET_PASSWORD_PATH,
+  sendResetCode,
+} from "@/server/auth/password-reset";
 import { isPublicSignupAllowed } from "@/server/auth/registration";
+import { passwordResetAvailable } from "@/server/email/config";
 
 /**
  * Contexto interno del proceso: permite que el alta de cuentas de equipo
@@ -38,7 +48,15 @@ function isInternalSignup(): boolean {
   return internalSignupContext().getStore() === true;
 }
 
-const RATE_LIMITED_PATHS = new Set(["/sign-in/email", "/sign-up/email"]);
+const RATE_LIMITED_PATHS = new Set([
+  "/sign-in/email",
+  "/sign-up/email",
+  REQUEST_RESET_PATH,
+  RESET_PASSWORD_PATH,
+]);
+
+/** Pedir el código: pocos por correo, para no usar el CRM como bomba de correo. */
+const RESET_REQUEST_PER_EMAIL = { windowMs: 10 * 60 * 1000, max: 3 };
 
 function createAuth() {
   const env = getEnv();
@@ -61,8 +79,24 @@ function createAuth() {
       enabled: true,
       requireEmailVerification: false,
       minPasswordLength: 8,
+      // Quien restablece la contraseña es porque alguien más pudo tenerla: se
+      // cierran las sesiones abiertas.
+      revokeSessionsOnPasswordReset: true,
     },
-    plugins: [organization({ creatorRole: "owner" })],
+    plugins: [
+      organization({ creatorRole: "owner" }),
+      // Restablecer la contraseña con un código por correo. El código se guarda
+      // hasheado, vence y se invalida tras unos intentos. Solo se exponen las dos
+      // rutas del restablecimiento (ver el hook de abajo).
+      emailOTP({
+        otpLength: RESET_CODE_LENGTH,
+        expiresIn: RESET_CODE_TTL_SECONDS,
+        allowedAttempts: RESET_CODE_MAX_ATTEMPTS,
+        storeOTP: "hashed",
+        disableSignUp: true,
+        sendVerificationOTP: sendResetCode,
+      }),
+    ],
     hooks: {
       before: createAuthMiddleware(async (ctx) => {
         // Rate limit por IP en login/registro (FR-062): 10 / 10 min → 429.
@@ -75,12 +109,34 @@ function createAuth() {
             });
           }
         }
-        // Registro público cerrado tras la primera organización (FR-060).
+        // El plugin de códigos trae rutas que nadie pidió (entrar solo con un
+        // código, verificar o cambiar el correo): 404.
+        if (isBlockedEmailOtpPath(ctx.path)) {
+          throw new APIError("NOT_FOUND", { message: "No existe" });
+        }
+        if (ctx.path === REQUEST_RESET_PATH) {
+          // Sin un servidor de correo no hay a dónde mandar el código.
+          if (!passwordResetAvailable()) {
+            throw new APIError("SERVICE_UNAVAILABLE", {
+              message: "El restablecimiento por correo no está configurado",
+            });
+          }
+          const email = String(
+            (ctx.body as { email?: unknown } | undefined)?.email ?? ""
+          ).toLowerCase();
+          const byEmail = checkRateLimit(`reset-request:${email}`, RESET_REQUEST_PER_EMAIL);
+          if (!byEmail.allowed) {
+            throw new APIError("TOO_MANY_REQUESTS", {
+              message: "Demasiados intentos; espera unos minutos",
+            });
+          }
+        }
+        // Registro por HTTP cerrado: las cuentas se crean por backend (FR-060).
         if (ctx.path === "/sign-up/email") {
           if (!isInternalSignup() && !(await isPublicSignupAllowed())) {
             throw new APIError("FORBIDDEN", {
               message:
-                "El registro está cerrado: esta instancia ya tiene su organización",
+                "El registro está deshabilitado: las cuentas las crea quien administra el servidor",
             });
           }
         }

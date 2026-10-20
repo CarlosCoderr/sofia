@@ -1,0 +1,35 @@
+import { parseBody, withAuth } from "@/lib/api";
+import { comboPatchSchema } from "@/lib/salon/schemas";
+import { deleteCombo, updateCombo } from "@/server/business/catalog";
+import { salonErrorResponse, salonGate } from "@/server/business/http";
+
+export const dynamic = "force-dynamic";
+
+type Params = { params: Promise<{ id: string }> };
+
+export const PATCH = withAuth(async (session, req: Request, ctx: Params) => {
+  const denied = salonGate(session, "manager");
+  if (denied) return denied;
+  const { id } = await ctx.params;
+  const body = await parseBody(req, comboPatchSchema);
+  if (!body.ok) return body.response;
+  try {
+    const combo = await updateCombo(session.organizationId, id, body.data);
+    return Response.json({ combo });
+  } catch (err) {
+    return salonErrorResponse(err);
+  }
+});
+
+/** 409 `in_use` si ya tiene ventas: la UI ofrece desactivarlo. */
+export const DELETE = withAuth(async (session, _req: Request, ctx: Params) => {
+  const denied = salonGate(session, "manager");
+  if (denied) return denied;
+  const { id } = await ctx.params;
+  try {
+    await deleteCombo(session.organizationId, id);
+    return Response.json({ ok: true });
+  } catch (err) {
+    return salonErrorResponse(err);
+  }
+});

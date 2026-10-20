@@ -6,6 +6,7 @@ import { Send } from "lucide-react";
 import type { TemplateDto } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { SearchSelect } from "@/components/ui/search-select";
 
 /** Cuenta {{1}}..{{n}} igual que el servidor, para pedir sus valores. */
 function countVariables(body: string): number {
@@ -85,7 +86,7 @@ export function StartConversation({
           contactarla con una <strong>plantilla aprobada</strong>, y todavía no
           tienes ninguna.
         </p>
-        <Link href="/settings/templates">
+        <Link href="/ajustes/plantillas">
           <Button size="sm" variant="secondary" className="mt-2">
             Ir a plantillas
           </Button>
@@ -99,21 +100,17 @@ export function StartConversation({
       <p className="text-xs text-text-3">
         Nunca te ha escrito: para iniciar hay que usar una plantilla aprobada.
       </p>
-      <select
+      <SearchSelect
         value={templateId}
-        onChange={(e) => {
-          setTemplateId(e.target.value);
+        onChange={(v) => {
+          setTemplateId(v);
           setVars([]);
         }}
-        aria-label="Plantilla para iniciar"
-        className="h-9 w-full rounded-md border border-input bg-card px-2 text-sm"
-      >
-        {templates.map((t) => (
-          <option key={t.id} value={t.id}>
-            {t.name} ({t.language})
-          </option>
-        ))}
-      </select>
+        ariaLabel="Plantilla para iniciar"
+        options={templates.map((t) => ({ value: t.id, label: `${t.name} (${t.language})` }))}
+        searchPlaceholder="Buscar plantilla…"
+        triggerClassName="bg-card px-2"
+      />
 
       {elegida && (
         <p className="rounded-md border bg-subtle px-3 py-2 text-[12px] text-text-2">

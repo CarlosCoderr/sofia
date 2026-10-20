@@ -88,6 +88,8 @@ export async function createSessionBooking(input: {
   conversationId?: string | null;
   /** Camino manual del operador. */
   contactId?: string | null;
+  /** Módulo SALON: el profesional («silla») que atiende; nulo = sin asignar. */
+  staffId?: string | null;
   notes?: string | null;
   /**
    * true ⇒ exige que el instante figure entre los ofrecidos a la conversación
@@ -197,6 +199,7 @@ export async function createSessionBooking(input: {
         // el que le tocó y sigue hablando con él al moverse o cancelarse.
         connector: settings.connector,
         isTest,
+        staffId: input.staffId ?? null,
         notes: input.notes ?? null,
       })
       .returning();

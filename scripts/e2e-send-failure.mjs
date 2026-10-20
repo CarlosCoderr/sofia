@@ -101,7 +101,7 @@ ok("conserva el código de Meta para rastrearlo",
 
 console.log("\n== El operador lo VE en el hilo ==");
 const page = await ctx.newPage();
-await page.goto(`${BASE}/inbox`, { waitUntil: "domcontentloaded" });
+await page.goto(`${BASE}/bandeja`, { waitUntil: "domcontentloaded" });
 await page.getByText(NAME).first().waitFor({ timeout: 20000 });
 await page.getByText(NAME).first().click();
 await page.getByText("mensaje que Meta va a rechazar").waitFor({ timeout: 15000 });

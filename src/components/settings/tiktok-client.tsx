@@ -145,7 +145,7 @@ export function TiktokClient() {
         <span>
           El webhook lo da de alta Vocero en tu Zernio al conectar, limitado a
           tus cuentas. Si un día dejan de llegar mensajes, revisa{" "}
-          <Link href="/settings/channels" className="font-semibold underline">
+          <Link href="/ajustes/canales" className="font-semibold underline">
             el estado de los canales
           </Link>
           .

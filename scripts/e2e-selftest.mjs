@@ -1699,16 +1699,16 @@ async function guiaChecks() {
   );
 
   const r0 = await raiz();
-  ok("la raíz manda a /onboarding mientras falte un paso", mandaA("/onboarding")(r0), r0);
+  ok("la raíz manda a /guia-de-inicio mientras falte un paso", mandaA("/guia-de-inicio")(r0), r0);
 
   // La pantalla se compila en su primer request en `next dev`: espera activa.
   let html = "";
   const pantalla = await hasta(async () => {
-    const res = await fetch(`${BASE}/onboarding`, { headers: { cookie } });
+    const res = await fetch(`${BASE}/guia-de-inicio`, { headers: { cookie } });
     html = res.ok ? texto(await res.text()) : "";
     return res.ok && html.includes("Deja listo tu CRM en");
   }, 40_000, 1000);
-  ok("la pantalla /onboarding carga con la cabecera «Deja listo tu CRM en N pasos»", pantalla);
+  ok("la pantalla /guia-de-inicio carga con la cabecera «Deja listo tu CRM en N pasos»", pantalla);
   ok(
     `…y cuenta los ${guiaKeys.length} pasos de esta instancia`,
     html.includes(`Deja listo tu CRM en ${guiaKeys.length} pasos`)
@@ -1759,7 +1759,7 @@ async function guiaChecks() {
     const cerrado = await paso("calendar");
     ok(
       "paso 4: con todos los días cerrados la agenda sigue pendiente",
-      cerrado?.status === "pending" && cerrado?.href === "/settings/calendar",
+      cerrado?.status === "pending" && cerrado?.href === "/ajustes/calendario",
       JSON.stringify(cerrado)
     );
     await api("/api/calendar/settings", {
@@ -1809,8 +1809,8 @@ async function guiaChecks() {
     JSON.stringify(listo?.guide)
   );
   const r1 = await raiz();
-  ok("…y la raíz SIGUE mandando a /onboarding: falta encenderlo", mandaA("/onboarding")(r1), r1);
-  const htmlListo = texto(await (await fetch(`${BASE}/onboarding`, { headers: { cookie } })).text());
+  ok("…y la raíz SIGUE mandando a /guia-de-inicio: falta encenderlo", mandaA("/guia-de-inicio")(r1), r1);
+  const htmlListo = texto(await (await fetch(`${BASE}/guia-de-inicio`, { headers: { cookie } })).text());
   ok(
     "la tarjeta final ofrece «Encender a Sofi» (el nombre, ya configurado)",
     htmlListo.includes("Enciende a Sofi") && htmlListo.includes("Encender a Sofi")
@@ -1824,8 +1824,8 @@ async function guiaChecks() {
   const encendido = await estado();
   ok("…y la guía lo refleja", encendido?.enabled === true && encendido?.guide?.enabled === true);
   const r2 = await raiz();
-  ok("con todo listo y encendido la raíz manda a la Bandeja", mandaA("/inbox")(r2), r2);
-  const htmlEncendido = texto(await (await fetch(`${BASE}/onboarding`, { headers: { cookie } })).text());
+  ok("con todo listo y encendido la raíz manda a la Bandeja", mandaA("/bandeja")(r2), r2);
+  const htmlEncendido = texto(await (await fetch(`${BASE}/guia-de-inicio`, { headers: { cookie } })).text());
   ok(
     "la guía sigue disponible y dice que Sofi ya está contestando",
     htmlEncendido.includes("Sofi ya está contestando") && htmlEncendido.includes("Ir a la Bandeja")
@@ -2028,8 +2028,8 @@ async function agendaChecks() {
       botAvail.res.status === 404,
       `status=${botAvail.res.status}`
     );
-    const page = await fetch(`${BASE}/bookings`, { headers: { cookie } });
-    ok("la pantalla /bookings no existe", page.status === 404, `status=${page.status}`);
+    const page = await fetch(`${BASE}/citas`, { headers: { cookie } });
+    ok("la pantalla /citas no existe", page.status === 404, `status=${page.status}`);
     console.log("  (agenda apagada: el resto de los checks de 015 no aplican)");
     return;
   }
@@ -2776,9 +2776,9 @@ async function atribucionChecks() {
       put.res.status === 404,
       `status=${put.res.status}`
     );
-    const page = await fetch(`${BASE}/settings/ads`, { headers: { cookie } });
+    const page = await fetch(`${BASE}/ajustes/anuncios`, { headers: { cookie } });
     ok(
-      "la pantalla /settings/ads no existe",
+      "la pantalla /ajustes/anuncios no existe",
       page.status === 404,
       `status=${page.status}`
     );

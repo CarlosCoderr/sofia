@@ -143,14 +143,81 @@ export async function findSlot(
   return slots.find((s) => Date.parse(s.startUtc) === target) ?? null;
 }
 
+/** Una cita o un bloqueo, ya con sus instantes (lo que necesita el cálculo de ocupación). */
+export type BusyRow = { kind: "session" | "block"; startUtc: string; endUtc: string };
+
+/**
+ * PURA: qué intervalos NO se pueden ofrecer, dadas las citas del rango y el
+ * número de sillas.
+ *
+ *  - Un BLOQUEO manual ocupa su intervalo completo sea cual sea el número de
+ *    sillas: es tiempo que el negocio no atiende, no una cita más.
+ *  - Con N sillas, el negocio solo se llena cuando N citas coinciden EN EL
+ *    TIEMPO: se barre la línea de tiempo y se devuelven los tramos donde hay N
+ *    o más citas a la vez, con su duración real. (Contar solo las que empiezan
+ *    a la misma hora dejaba pasar citas de distinta duración que sí se pisan, y
+ *    ignoraba cuánto dura cada una.)
+ *  - Con una sola silla es exactamente lo de siempre: cada cita ocupa su
+ *    intervalo.
+ */
+export function buildBusyIntervals(rows: BusyRow[], chairs: number): SlotUtc[] {
+  const capacity = Math.max(1, Math.floor(chairs));
+  const busy: SlotUtc[] = rows
+    .filter((r) => r.kind === "block")
+    .map((r) => ({ startUtc: r.startUtc, endUtc: r.endUtc }));
+
+  // Barrido: +1 al empezar una cita, −1 al terminar. Al empatar en el tiempo,
+  // primero se cierran las que terminan: dos citas pegadas (10:00–10:30 y
+  // 10:30–11:00) nunca cuentan como simultáneas.
+  const events: { at: number; delta: 1 | -1 }[] = [];
+  for (const r of rows) {
+    if (r.kind !== "session") continue;
+    const start = Date.parse(r.startUtc);
+    const end = Date.parse(r.endUtc);
+    if (Number.isNaN(start) || Number.isNaN(end) || end <= start) continue;
+    events.push({ at: start, delta: 1 }, { at: end, delta: -1 });
+  }
+  events.sort((a, b) => a.at - b.at || a.delta - b.delta);
+
+  let active = 0;
+  let fullSince: number | null = null;
+  for (const ev of events) {
+    active += ev.delta;
+    if (active >= capacity && fullSince === null) {
+      fullSince = ev.at;
+    } else if (active < capacity && fullSince !== null) {
+      if (ev.at > fullSince) {
+        busy.push({
+          startUtc: new Date(fullSince).toISOString(),
+          endUtc: new Date(ev.at).toISOString(),
+        });
+      }
+      fullSince = null;
+    }
+  }
+  return busy;
+}
+
 async function getBusyIntervals(
   organizationId: string,
   input: { fromUtc: Date; toUtc: Date; excludeBookingId?: string }
 ): Promise<SlotUtc[]> {
   const db = getDb();
+
+  // Multicupo: tantas sillas como profesionales activos (al menos una). Es una
+  // simplificación documentada: no mira los turnos ni los días libres de cada
+  // uno — eso lo dibuja el tablero por sillas (Negocio → Agenda).
+  const activeStaff = await db
+    .select({ id: schema.staff.id })
+    .from(schema.staff)
+    .where(
+      scoped(schema.staff.organizationId, organizationId, eq(schema.staff.active, true))
+    );
+
   const rows = await db
     .select({
       id: schema.booking.id,
+      kind: schema.booking.kind,
       scheduledAt: schema.booking.scheduledAt,
       durationMinutes: schema.booking.durationMinutes,
     })
@@ -170,12 +237,14 @@ async function getBusyIntervals(
       )
     );
 
-  return rows
-    .filter((r) => r.id !== input.excludeBookingId)
-    .map((r) => ({
-      startUtc: r.scheduledAt.toISOString(),
-      endUtc: new Date(
-        r.scheduledAt.getTime() + r.durationMinutes * 60_000
-      ).toISOString(),
-    }));
+  return buildBusyIntervals(
+    rows
+      .filter((r) => r.id !== input.excludeBookingId)
+      .map((r) => ({
+        kind: r.kind,
+        startUtc: r.scheduledAt.toISOString(),
+        endUtc: new Date(r.scheduledAt.getTime() + r.durationMinutes * 60_000).toISOString(),
+      })),
+    activeStaff.length
+  );
 }

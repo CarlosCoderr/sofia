@@ -93,7 +93,7 @@ const outMsgs = async () => {
 await req.get(`${BASE}/api/conversations/${conv.id}/messages`);
 
 const page = await ctx.newPage();
-await page.goto(`${BASE}/inbox`);
+await page.goto(`${BASE}/bandeja`);
 await page.getByText(NAME).first().click();
 const box = page.getByPlaceholder("Escribe una respuesta");
 await box.waitFor({ timeout: 20000 });

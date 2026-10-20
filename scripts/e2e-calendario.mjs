@@ -148,14 +148,14 @@ async function main() {
       ok(`GET /api/bookings${q} → 404`, r.status === 404, `status=${r.status}`);
     }
     const page = await ctx.newPage();
-    const nav = await page.goto(`${BASE}/bookings?vista=semana&fecha=2026-09-21`, {
+    const nav = await page.goto(`${BASE}/citas?vista=semana&fecha=2026-09-21`, {
       waitUntil: "domcontentloaded",
     });
-    ok("la pantalla /bookings es 404", nav?.status() === 404, `status=${nav?.status()}`);
-    const inbox = await page.goto(`${BASE}/inbox`, { waitUntil: "domcontentloaded" });
+    ok("la pantalla /citas es 404", nav?.status() === 404, `status=${nav?.status()}`);
+    const inbox = await page.goto(`${BASE}/bandeja`, { waitUntil: "domcontentloaded" });
     ok(
       "la navegación no ofrece «Citas»",
-      inbox?.ok() && (await page.locator('a[href="/bookings"]').count()) === 0
+      inbox?.ok() && (await page.locator('a[href="/citas"]').count()) === 0
     );
     return;
   }
@@ -318,7 +318,7 @@ async function main() {
     if (u.includes("/api/calendar/availability")) conteo.availability++;
     if (u.includes("/api/bookings?from=")) conteo.rango++;
   });
-  await page.goto(`${BASE}/bookings?vista=semana&fecha=${D}`, { waitUntil: "domcontentloaded", timeout: 60000 });
+  await page.goto(`${BASE}/citas?vista=semana&fecha=${D}`, { waitUntil: "domcontentloaded", timeout: 60000 });
   const titulo10 = `Lead calendario, ${s10.time} a `;
   const evento10 = page.locator(`[aria-label^="${titulo10}"]`);
   ok("la semana pinta la cita", await until(async () => (await evento10.count()) === 1, 45000), `count=${await evento10.count()}`);
@@ -365,7 +365,7 @@ async function main() {
   ok("vista Lista con Desde–Hasta en la URL", await until(async () => /vista=lista&desde=\d{4}-\d{2}-\d{2}&hasta=\d{4}-\d{2}-\d{2}/.test(page.url()), 5000), page.url());
   ok("la Lista muestra la cita", await until(async () => (await page.getByText("Lead calendario").count()) > 0, 8000));
 
-  await page.goto(`${BASE}/bookings?vista=semana&fecha=${D}`, { waitUntil: "domcontentloaded" });
+  await page.goto(`${BASE}/citas?vista=semana&fecha=${D}`, { waitUntil: "domcontentloaded" });
   await until(async () => (await evento10.count()) === 1, 30000);
 
   console.log("\n== 215: el panel de la cita y reprogramar (fallo 2) ==");
@@ -375,7 +375,7 @@ async function main() {
   const panel = page.getByRole("dialog", { name: "Cita: Lead calendario" });
   ok("tocar la cita abre su panel", await until(async () => panel.isVisible(), 5000));
   const abrir = panel.getByRole("link", { name: "Abrir conversación" });
-  ok("«Abrir conversación» lleva a su hilo", (await abrir.getAttribute("href")) === `/inbox?contact=${conv.contact.id}`, await abrir.getAttribute("href"));
+  ok("«Abrir conversación» lleva a su hilo", (await abrir.getAttribute("href")) === `/bandeja?contact=${conv.contact.id}`, await abrir.getAttribute("href"));
   for (const b of ["Reprogramar", "Realizada", "No asistió", "Cancelar cita"]) {
     ok(`acción «${b}» presente`, (await panel.getByRole("button", { name: b }).count()) === 1);
   }
@@ -415,7 +415,7 @@ async function main() {
   ok("Escape cierra el panel", await until(async () => (await panel.count()) === 0, 5000));
 
   console.log("\n== 215: bloquear tocando un hueco vacío, en la hora del negocio (fallo 1) ==");
-  await page.goto(`${BASE}/bookings?vista=semana&fecha=${D}`, { waitUntil: "domcontentloaded" });
+  await page.goto(`${BASE}/citas?vista=semana&fecha=${D}`, { waitUntil: "domcontentloaded" });
   await until(async () => (await page.locator(`[data-day="${D}"]`).count()) === 1, 30000);
   const D2 = weekdayIdx(D) < 4 ? addDays(D, 1) : addDays(D, -1);
   const pos = await page.evaluate(
@@ -484,7 +484,7 @@ async function main() {
   });
   await movil.addCookies(await ctx.cookies());
   const mp = await movil.newPage();
-  await mp.goto(`${BASE}/bookings`, { waitUntil: "domcontentloaded", timeout: 60000 });
+  await mp.goto(`${BASE}/citas`, { waitUntil: "domcontentloaded", timeout: 60000 });
   ok("sin preferencia, el celular abre en «Día»", await until(async () => mp.url().includes("vista=dia"), 20000), mp.url());
   ok(
     "la página no desborda a lo ancho",

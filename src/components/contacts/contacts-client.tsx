@@ -28,6 +28,8 @@ import { PriorityBadge } from "@/components/pipeline/priority-picker";
 import { ImportContactsDialog } from "./import-contacts-dialog";
 import { NewContactDialog } from "./new-contact-dialog";
 import { StartConversation } from "./start-conversation";
+import { DialogCloseButton } from "@/components/ui/dialog-close";
+import { SearchSelect } from "@/components/ui/search-select";
 
 export function ContactsClient() {
   const router = useRouter();
@@ -115,19 +117,18 @@ export function ContactsClient() {
             Ver archivados
           </label>
           {stages.length > 0 && (
-            <select
+            <SearchSelect
               value={stage}
-              onChange={(e) => setStage(e.target.value)}
-              aria-label="Filtrar por etapa del embudo"
-              className="h-9 rounded-md border border-input bg-card px-2 text-sm"
-            >
-              <option value="all">Toda etapa</option>
-              {stages.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
+              onChange={setStage}
+              ariaLabel="Filtrar por etapa del embudo"
+              options={[
+                { value: "all", label: "Toda etapa" },
+                ...stages.map((s) => ({ value: s, label: s })),
+              ]}
+              searchPlaceholder="Buscar etapa…"
+              className="w-44"
+              triggerClassName="bg-card px-2"
+            />
           )}
           <div className="relative w-full sm:w-auto">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -231,7 +232,7 @@ export function ContactsClient() {
                   >
                     <Send className="h-4 w-4" />
                   </Button>
-                  <Link href={`/inbox?contact=${c.id}`}>
+                  <Link href={`/bandeja?contact=${c.id}`}>
                     <Button variant="ghost" size="icon" aria-label="Abrir conversación">
                       <MessageSquareText className="h-4 w-4" />
                     </Button>
@@ -272,15 +273,17 @@ export function ContactsClient() {
           role="dialog"
           aria-modal="true"
           aria-label="Escribir primero"
+          onClick={() => setEscribiendo(null)}
         >
-          <div className="w-full max-w-md rounded-lg border bg-popover p-4 shadow-pop">
-            <div className="mb-3 flex items-baseline justify-between gap-2">
+          <div
+            className="relative w-full max-w-md rounded-lg border bg-popover p-4 shadow-pop"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <DialogCloseButton onClick={() => setEscribiendo(null)} />
+            <div className="mb-3 pr-8">
               <h3 className="font-semibold">
                 Escribir a {escribiendo.name}
               </h3>
-              <Button variant="ghost" size="sm" onClick={() => setEscribiendo(null)}>
-                Cerrar
-              </Button>
             </div>
             <StartConversation
               contactId={escribiendo.id}
@@ -289,7 +292,7 @@ export function ContactsClient() {
                 setEscribiendo(null);
                 // La Bandeja resuelve por CONTACTO (`?contact=`), no por
                 // conversación: con `?conversation=` no seleccionaría nada.
-                router.push(`/inbox?contact=${contactId}`);
+                router.push(`/bandeja?contact=${contactId}`);
               }}
             />
           </div>
@@ -312,7 +315,7 @@ export function ContactsClient() {
           }}
           onOpenExisting={(contactId) => {
             setCreando(false);
-            router.push(`/inbox?contact=${contactId}`);
+            router.push(`/bandeja?contact=${contactId}`);
           }}
         />
       )}
@@ -339,10 +342,11 @@ function EditDialog({
       onClick={onClose}
     >
       <div
-        className="max-h-[85dvh] w-full max-w-md overflow-y-auto rounded-lg border bg-popover p-5 shadow-xl"
+        className="relative max-h-[85dvh] w-full max-w-md overflow-y-auto rounded-lg border bg-popover p-5 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className="mb-4 font-semibold">Editar contacto</h3>
+        <DialogCloseButton onClick={onClose} />
+        <h3 className="mb-4 pr-8 font-semibold">Editar contacto</h3>
         <div className="space-y-3">
           <div className="space-y-1.5">
             <label className="text-sm font-medium" htmlFor="edit-name">

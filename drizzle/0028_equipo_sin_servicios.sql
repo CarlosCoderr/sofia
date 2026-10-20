@@ -1,0 +1,1 @@
+DROP TABLE "staff_allowed_service" CASCADE;

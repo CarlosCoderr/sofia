@@ -1,14 +1,13 @@
-import { count } from "drizzle-orm";
-import { getDb, schema } from "@/lib/db";
-
 /**
- * Registro público cerrado tras la primera organización (FR-060), salvo la
- * variable de escape ALLOW_SIGNUP=true. Las cuentas de equipo las crea el
- * propietario (bypass interno del gate).
+ * El registro por HTTP (`POST /api/auth/sign-up/email`) está CERRADO: la app
+ * no tiene pantalla de registro y las cuentas se crean por backend, con
+ * `pnpm crear-usuario` (ver scripts/crear-usuario.ts) o, las del equipo, el
+ * propietario desde Ajustes → Equipo (bypass interno del gate).
+ *
+ * La única apertura es la variable de despliegue ALLOW_SIGNUP=true, pensada
+ * SOLO para los arneses de prueba: deja de ser una instancia con el registro
+ * cerrado. Cualquier otro valor ("1", "yes"…) no la abre.
  */
 export async function isPublicSignupAllowed(): Promise<boolean> {
-  if (process.env.ALLOW_SIGNUP === "true") return true;
-  const db = getDb();
-  const rows = await db.select({ n: count() }).from(schema.organization);
-  return (rows[0]?.n ?? 0) === 0;
+  return process.env.ALLOW_SIGNUP === "true";
 }

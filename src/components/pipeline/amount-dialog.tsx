@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PriorityPicker } from "./priority-picker";
 import type { PriorityValue } from "@/lib/types";
+import { DialogCloseButton } from "@/components/ui/dialog-close";
 
 /**
  * Monto y prioridad de un trato: los dos datos que el dueño ajusta desde el
@@ -46,9 +47,14 @@ export function AmountDialog({
       role="dialog"
       aria-modal="true"
       aria-label="Monto y prioridad"
+      onClick={onCancel}
     >
-      <div className="w-full max-w-sm rounded-lg border bg-popover p-4 shadow-pop">
-        <h3 className="font-semibold">Monto y prioridad</h3>
+      <div
+        className="relative w-full max-w-sm rounded-lg border bg-popover p-4 shadow-pop"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <DialogCloseButton onClick={onCancel} />
+        <h3 className="pr-8 font-semibold">Monto y prioridad</h3>
         <p className="mt-0.5 text-xs text-text-3">{leadName}</p>
 
         <label className="mt-3 block text-xs font-medium" htmlFor="monto">

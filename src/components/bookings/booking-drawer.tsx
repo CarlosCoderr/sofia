@@ -172,7 +172,7 @@ export function BookingDrawer({
             <section className="space-y-2 border-b p-4">
               {b.contact && b.conversationId && (
                 <Link
-                  href={`/inbox?contact=${b.contact.id}`}
+                  href={`/bandeja?contact=${b.contact.id}`}
                   className="flex w-full items-center justify-center gap-2 rounded-md border bg-secondary px-3 py-2 text-sm font-medium hover:bg-accent"
                 >
                   <MessageSquareText className="h-4 w-4" /> Abrir conversación

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { apiError, parseBody, withAuth } from "@/lib/api";
+import { canConfigure } from "@/lib/auth/roles";
 import { testConnection } from "@/server/whatsapp/connect";
 
 export const dynamic = "force-dynamic";
@@ -10,7 +11,10 @@ const bodySchema = z.object({
 });
 
 /** Prueba de conexión: valida token↔número, NO guarda (FR-040). */
-export const POST = withAuth(async (_session, req: Request) => {
+export const POST = withAuth(async (session, req: Request) => {
+  if (!canConfigure(session.role)) {
+    return apiError(403, "forbidden", "Solo el dueño o un administrador puede hacer esto");
+  }
   const body = await parseBody(req, bodySchema);
   if (!body.ok) return body.response;
 

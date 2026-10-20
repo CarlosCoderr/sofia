@@ -2,8 +2,11 @@ import { describe, expect, it } from "vitest";
 import {
   appNavGroups,
   isNavActive,
+  NAV_V2,
+  salonHomePath,
   SETTINGS_ITEM,
   settingsSections,
+  SYSTEM_TITLE,
 } from "@/lib/nav";
 
 /**
@@ -15,54 +18,69 @@ import {
 const labels = (groups: { items: { label: string }[] }[]) =>
   groups.map((g) => g.items.map((i) => i.label));
 
-describe("barra lateral agrupada", () => {
-  it("con todo apagado y como miembro: Trabajo, Agente y Resultados", () => {
+describe("barra lateral agrupada (v1.0)", () => {
+  it("con todo apagado y como miembro: solo Trabajo, con Contactos y Medios", () => {
     const groups = appNavGroups({ role: "member" });
-    expect(groups.map((g) => g.title)).toEqual(["Trabajo", "Agente", undefined]);
-    expect(labels(groups)).toEqual([
-      ["Bandeja", "Pipeline", "Contactos"],
-      ["Agente", "Laboratorio"],
-      ["Resultados"],
-    ]);
+    expect(groups.map((g) => g.title)).toEqual(["Trabajo"]);
+    expect(labels(groups)).toEqual([["Contactos", "Medios"]]);
   });
 
-  it("AGENDA añade Citas al final de Trabajo", () => {
+  it("AGENDA añade Citas en su lugar: antes de Contactos", () => {
     const [trabajo] = appNavGroups({ agenda: true, role: "member" });
-    expect(trabajo!.items.map((i) => i.label)).toEqual([
-      "Bandeja",
-      "Pipeline",
-      "Contactos",
-      "Citas",
-    ]);
-    expect(trabajo!.items.at(-1)!.href).toBe("/bookings");
+    expect(trabajo!.items.map((i) => i.label)).toEqual(["Citas", "Contactos", "Medios"]);
   });
 
-  it("la guía de inicio abre el grupo Agente solo para quien configura", () => {
-    for (const role of ["owner", "admin"]) {
-      const agente = appNavGroups({ role })[1]!;
-      expect(agente.items[0]).toMatchObject({ href: "/onboarding", label: "Guía de inicio" });
-    }
-    for (const role of ["member", null, undefined]) {
-      const agente = appNavGroups({ role })[1]!;
-      expect(agente.items.map((i) => i.href)).not.toContain("/onboarding");
+  it("la v1.0 oculta Bandeja, Pipeline y todo el bloque Agente; las rutas siguen existiendo", () => {
+    expect(NAV_V2).toBe(false);
+    for (const role of ["owner", "admin", "member", null]) {
+      const hrefs = appNavGroups({ salon: true, agenda: true, role }).flatMap((g) =>
+        g.items.map((i) => i.href)
+      );
+      for (const h of ["/bandeja", "/pipeline", "/guia-de-inicio", "/agente", "/laboratorio", "/resultados"]) {
+        expect(hrefs, `${role} ${h}`).not.toContain(h);
+      }
     }
   });
 
-  it("solo la Bandeja lleva el contador y Ajustes queda fuera de los grupos", () => {
-    const todos = appNavGroups({ agenda: true, role: "owner" }).flatMap((g) => g.items);
-    expect(todos.filter((i) => i.badge).map((i) => i.href)).toEqual(["/inbox"]);
-    expect(todos.map((i) => i.href)).not.toContain("/settings");
-    expect(SETTINGS_ITEM.href).toBe("/settings");
-    // Cada entrada trae su icono: el renglón lo pinta sin condicionar.
+  it("Ajustes queda fuera de los grupos, bajo el encabezado Sistema, y cada entrada trae icono", () => {
+    const todos = appNavGroups({ salon: true, agenda: true, role: "owner" }).flatMap((g) => g.items);
+    expect(todos.map((i) => i.href)).not.toContain("/ajustes");
+    expect(SETTINGS_ITEM.href).toBe("/ajustes");
+    expect(SYSTEM_TITLE).toBe("Sistema");
     for (const item of [...todos, SETTINGS_ITEM]) expect(item.icon).toBeDefined();
   });
 
-  it("una ruta hija activa su entrada, y /settings no activa nada más", () => {
-    expect(isNavActive("/inbox/cv_123", "/inbox")).toBe(true);
-    expect(isNavActive("/inbox", "/inbox")).toBe(true);
-    expect(isNavActive("/inboxes", "/inbox")).toBe(false);
-    expect(isNavActive("/settings/ai", "/settings")).toBe(true);
-    expect(isNavActive("/settings/ai", "/agent")).toBe(false);
+  it("una ruta hija activa su entrada, y /ajustes no activa nada más", () => {
+    expect(isNavActive("/bandeja/cv_123", "/bandeja")).toBe(true);
+    expect(isNavActive("/bandeja", "/bandeja")).toBe(true);
+    expect(isNavActive("/inboxes", "/bandeja")).toBe(false);
+    expect(isNavActive("/ajustes/ia", "/ajustes")).toBe(true);
+    expect(isNavActive("/ajustes/ia", "/agente")).toBe(false);
+  });
+});
+
+describe("entrada con SALON encendido", () => {
+  it("dueño y administrador entran al Panel, que es una entrada visible del menú", () => {
+    for (const role of ["owner", "admin"]) {
+      const home = salonHomePath({ agenda: true, role });
+      expect(home).toBe("/panel");
+      const hrefs = appNavGroups({ salon: true, agenda: true, role }).flatMap((g) =>
+        g.items.map((i) => i.href)
+      );
+      expect(hrefs).toContain(home);
+      expect(isNavActive("/panel", home)).toBe(true);
+    }
+  });
+
+  it("un miembro del equipo, sin Panel, entra a Citas o a Contactos (siempre en su menú)", () => {
+    for (const agenda of [true, false]) {
+      const home = salonHomePath({ agenda, role: "member" });
+      expect(home).toBe(agenda ? "/citas" : "/contactos");
+      const hrefs = appNavGroups({ salon: true, agenda, role: "member" }).flatMap((g) =>
+        g.items.map((i) => i.href)
+      );
+      expect(hrefs).toContain(home);
+    }
   });
 });
 
@@ -120,26 +138,25 @@ describe("ajustes en tres secciones", () => {
     expect(new Set(all).size).toBe(all.length);
     expect(all.sort()).toEqual(
       [
-        "/settings/channels",
-        "/settings/whatsapp",
-        "/settings/instagram",
-        "/settings/messenger",
-        "/settings/tiktok",
-        "/settings/ai",
-        "/settings/calendar",
-        "/settings/branding",
-        "/settings/templates",
-        "/settings/team",
-        "/settings/ads",
+        "/ajustes/canales",
+        "/ajustes/whatsapp",
+        "/ajustes/instagram",
+        "/ajustes/messenger",
+        "/ajustes/tiktok",
+        "/ajustes/ia",
+        "/ajustes/calendario",
+        "/ajustes/marca",
+        "/ajustes/plantillas",
+        "/ajustes/equipo",
+        "/ajustes/anuncios",
       ].sort()
     );
   });
 
-  it("el Laboratorio no está en Ajustes: sigue en el menú principal", () => {
+  it("el Laboratorio no está en Ajustes (ni en el menú de la v1.0)", () => {
     const hrefs = settingsSections({ agenda: true, atribucion: true, messenger: true })
       .flatMap((s) => s.links)
       .map((l) => l.href);
-    expect(hrefs).not.toContain("/lab");
-    expect(appNavGroups({ role: "owner" }).flatMap((g) => g.items).map((i) => i.href)).toContain("/lab");
+    expect(hrefs).not.toContain("/laboratorio");
   });
 });

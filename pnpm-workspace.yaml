@@ -2,3 +2,9 @@ allowBuilds:
   esbuild: true
   sharp: true
   unrs-resolver: true
+
+# `sharp` llega como dependencia transitiva opcional de `next` (optimización de
+# imágenes) y SÍ corre en producción, a diferencia de las de `better-auth`
+# (vitest/drizzle-kit, solo de desarrollo). Fija la mínima sin CVEs conocidos.
+overrides:
+  sharp: ^0.35.5

@@ -43,10 +43,10 @@ type Row = {
 };
 
 const SETTINGS_HREF: Record<Channel, string> = {
-  whatsapp: "/settings/whatsapp",
-  instagram: "/settings/instagram",
-  messenger: "/settings/messenger",
-  tiktok: "/settings/tiktok",
+  whatsapp: "/ajustes/whatsapp",
+  instagram: "/ajustes/instagram",
+  messenger: "/ajustes/messenger",
+  tiktok: "/ajustes/tiktok",
 };
 
 const DOT: Record<Level, string> = {

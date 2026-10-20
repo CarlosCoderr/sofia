@@ -1,4 +1,5 @@
 import { apiError, parseBody, withAuth } from "@/lib/api";
+import { canConfigure } from "@/lib/auth/roles";
 import { listModels } from "@/lib/ai/probe";
 import {
   aiModelsSchema,
@@ -14,6 +15,9 @@ export const dynamic = "force-dynamic";
  * (`soportado: false`) y el modelo se escribe a mano.
  */
 export const POST = withAuth(async (session, req: Request) => {
+  if (!canConfigure(session.role)) {
+    return apiError(403, "forbidden", "Solo el dueño o un administrador puede hacer esto");
+  }
   const body = await parseBody(req, aiModelsSchema);
   if (!body.ok) return body.response;
 

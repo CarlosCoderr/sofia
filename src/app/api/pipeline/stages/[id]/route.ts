@@ -1,6 +1,7 @@
 import { count, eq } from "drizzle-orm";
 import { z } from "zod";
 import { apiError, parseBody, withAuth } from "@/lib/api";
+import { canConfigure } from "@/lib/auth/roles";
 import { getDb, schema } from "@/lib/db";
 import { scoped } from "@/lib/db/tenant";
 import { relocateLeadsFromStage } from "@/server/leads/stage-history";
@@ -15,6 +16,9 @@ const patchSchema = z.object({
 });
 
 export const PATCH = withAuth(async (session, req: Request, ctx: Params) => {
+  if (!canConfigure(session.role)) {
+    return apiError(403, "forbidden", "Solo el dueño o un administrador puede hacer esto");
+  }
   const { id } = await ctx.params;
   const body = await parseBody(req, patchSchema);
   if (!body.ok) return body.response;
@@ -41,6 +45,9 @@ export const PATCH = withAuth(async (session, req: Request, ctx: Params) => {
 });
 
 export const DELETE = withAuth(async (session, req: Request, ctx: Params) => {
+  if (!canConfigure(session.role)) {
+    return apiError(403, "forbidden", "Solo el dueño o un administrador puede hacer esto");
+  }
   const { id } = await ctx.params;
   const url = new URL(req.url);
   const moveTo = url.searchParams.get("moveTo");

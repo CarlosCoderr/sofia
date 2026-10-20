@@ -1,9 +1,9 @@
 "use client";
 
-import { useRef } from "react";
 import { ChevronDown, ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { MAX_RANGE_DAYS, type CalendarView } from "@/lib/time/calendar";
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
 import { cn } from "@/lib/utils";
 
 /**
@@ -39,6 +39,8 @@ export function CalendarToolbar({
   onView,
   onListRange,
   onBlock,
+  showTitle = true,
+  onNew,
 }: {
   view: CalendarView;
   anchor: string;
@@ -51,12 +53,15 @@ export function CalendarToolbar({
   onView: (view: CalendarView) => void;
   onListRange: (from: string, to: string) => void;
   onBlock: () => void;
+  /** Falso cuando la pantalla ya tiene su propio título (Citas con pestañas). */
+  showTitle?: boolean;
+  /** «Agendar cita»: lleva a la vista por sillas, donde se elige profesional. */
+  onNew?: () => void;
 }) {
-  const picker = useRef<HTMLInputElement>(null);
 
   return (
     <header className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b px-4 py-3 sm:px-6">
-      <h2 className="mr-1 text-[17px] font-bold tracking-tight">Citas</h2>
+      {showTitle && <h2 className="mr-1 text-[17px] font-bold tracking-tight">Citas</h2>}
 
       <div className="flex items-center gap-1">
         <Button variant="outline" size="sm" onClick={onToday}>
@@ -72,61 +77,33 @@ export function CalendarToolbar({
 
       {view === "lista" ? (
         <div className="flex flex-wrap items-center gap-1.5 text-sm">
-          <label className="sr-only" htmlFor="lista-desde">
-            Desde
-          </label>
-          <input
-            id="lista-desde"
-            type="date"
+          <DatePicker
+            compact
+            ariaLabel="Desde"
             value={anchor}
-            onChange={(e) => e.target.value && onListRange(e.target.value, listTo)}
-            className="h-8 rounded-md border border-input bg-background px-2 text-sm focus-visible:border-brand focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-brand-soft"
+            onChange={(day) => onListRange(day, listTo)}
+            className="w-32"
           />
           <span className="text-text-3">al</span>
-          <label className="sr-only" htmlFor="lista-hasta">
-            Hasta
-          </label>
-          <input
-            id="lista-hasta"
-            type="date"
+          <DatePicker
+            compact
+            ariaLabel={`Hasta (máximo ${MAX_RANGE_DAYS} días)`}
             value={listTo}
             min={anchor}
-            onChange={(e) => e.target.value && onListRange(anchor, e.target.value)}
-            title={`Hasta ${MAX_RANGE_DAYS} días`}
-            className="h-8 rounded-md border border-input bg-background px-2 text-sm focus-visible:border-brand focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-brand-soft"
+            onChange={(day) => onListRange(anchor, day)}
+            className="w-32"
           />
         </div>
       ) : (
-        <span className="relative">
-          <button
-            type="button"
-            onClick={() => {
-              const el = picker.current;
-              if (!el) return;
-              try {
-                el.showPicker();
-              } catch {
-                el.focus();
-              }
-            }}
-            className="flex items-center gap-1 rounded-md px-1.5 py-1 text-[17px] font-semibold tracking-tight hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-soft"
-            aria-label={`${label}. Elegir otra fecha`}
-          >
-            {label}
-            <ChevronDown className="h-4 w-4 text-text-3" />
-          </button>
-          {/* El selector nativo, anclado bajo la etiqueta: el del sistema es el
-              que mejor funciona en el celular. */}
-          <input
-            ref={picker}
-            type="date"
-            tabIndex={-1}
-            aria-hidden
-            value={anchor}
-            onChange={(e) => e.target.value && onJump(e.target.value)}
-            className="pointer-events-none absolute bottom-0 left-0 h-px w-px opacity-0"
-          />
-        </span>
+        <DatePicker
+          value={anchor}
+          onChange={onJump}
+          ariaLabel={`${label}. Elegir otra fecha`}
+          triggerClassName="flex items-center gap-1 rounded-md px-1.5 py-1 text-[17px] font-semibold tracking-tight hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-soft"
+        >
+          {label}
+          <ChevronDown className="h-4 w-4 text-text-3" />
+        </DatePicker>
       )}
 
       {loading && (
@@ -150,9 +127,20 @@ export function CalendarToolbar({
             </button>
           ))}
         </div>
-        <Button size="sm" onClick={onBlock} aria-label="Bloquear horario">
-          <Plus className="h-4 w-4" />
-          <span className="hidden sm:inline">Bloquear horario</span>
+        {onNew && (
+          <Button size="sm" onClick={onNew} aria-label="Agendar cita">
+            <Plus className="h-4 w-4" />
+            <span className="hidden sm:inline">Agendar cita</span>
+          </Button>
+        )}
+        <Button
+          size="sm"
+          variant={onNew ? "outline" : "default"}
+          onClick={onBlock}
+          aria-label="Bloquear horario"
+        >
+          {!onNew && <Plus className="h-4 w-4" />}
+          <span className={onNew ? undefined : "hidden sm:inline"}>Bloquear horario</span>
         </Button>
       </div>
     </header>

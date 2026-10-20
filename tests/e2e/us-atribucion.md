@@ -23,7 +23,7 @@ Con `ATRIBUCION` ausente:
 
 1. `GET`/`PUT`/`DELETE /api/settings/capi` y `GET /api/settings/capi/events`
    responden **404** (no 403: aquí ese endpoint no existe).
-2. La pantalla `/settings/ads` responde 404 y Ajustes no la menciona.
+2. La pantalla `/ajustes/anuncios` responde 404 y Ajustes no la menciona.
 3. Un mensaje que **sí** viene de un anuncio se atiende como cualquier otro: la
    conversación se crea y el mensaje se ve. Desde 018 **el origen del anuncio se
    ve igual** (titular en la lista), pero se guarda **sin** `ctwa_clid`: el

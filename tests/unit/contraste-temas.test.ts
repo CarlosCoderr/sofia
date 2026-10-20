@@ -4,19 +4,16 @@ import {
   ACCENT_PRESETS,
   DEFAULT_BRANDING,
   resolveAccentSet,
-  resolveNavAccentSet,
 } from "@/lib/branding";
 
 /**
- * R8 — Pisos de contraste de los dos temas, medidos sobre los tokens REALES de
- * globals.css (no sobre una copia). El tema oscuro de antes pasaba todas las
- * pruebas y aun así se veía plano: barra y página a 1.04:1, chip y panel a
- * 1.01:1. Aquí vive cada par que importa con su piso, para que un retoque de
- * color que lo rompa truene en `pnpm test` y no en una captura.
+ * Pisos de contraste de la interfaz (solo tema claro + la barra lateral azul
+ * marino), medidos sobre los tokens REALES de globals.css, no sobre una copia.
+ * Un retoque de color que rompa un par que importa truena en `pnpm test` y no
+ * en una captura.
  *
  * Pisos: texto de lectura ≥ 4.5:1 (WCAG AA); iconos, rellenos y anillo de
- * foco ≥ 3:1 (1.4.11); y para superficies y bordes, el escalón mínimo que se
- * alcanza a ver (≈ 1.1–1.25:1 entre superficies, ≥ 1.4:1 un borde).
+ * foco ≥ 3:1 (1.4.11).
  */
 
 type Vars = Record<string, string>;
@@ -38,7 +35,7 @@ function bloque(css: string, selector: string): Vars {
   const inicio = css.indexOf(selector);
   expect(inicio, `no está el bloque ${selector}`).toBeGreaterThanOrEqual(0);
   const cuerpo = css
-    .slice(css.indexOf("{", inicio) + 1, css.indexOf("}", inicio))
+    .slice(css.indexOf("{", inicio) + 1, css.indexOf("\n  }", inicio))
     .replace(/\/\*[\s\S]*?\*\//g, ""); // un comentario puede nombrar un token
   return Object.fromEntries(
     [...cuerpo.matchAll(/(--[\w-]+):\s*([^;]+);/g)].map((m) => [
@@ -48,13 +45,9 @@ function bloque(css: string, selector: string): Vars {
   );
 }
 
-const css = readFileSync("src/app/globals.css", "utf8");
+const css = readFileSync("src/app/globals.css", "utf8").replace(/\r\n/g, "\n");
 const claro = bloque(css, ":root {");
-const oscuroCrudo = bloque(css, ':root[data-theme="dark"] {');
-const nav = bloque(css, ".nav-dark {");
-
-/** Tokens del tema oscuro: lo que el bloque no redeclara viene de `:root`. */
-const oscuro: Vars = { ...claro, ...oscuroCrudo };
+const nav = bloque(css, ".nav-panel {");
 
 /** Resuelve `var(--x)` contra el mismo bloque (un nivel alcanza aquí). */
 function hex(vars: Vars, nombre: string): string {
@@ -72,185 +65,112 @@ function piso(vars: Vars, a: string, b: string, min: number) {
   expect(c, `${a} sobre ${b}: ${c.toFixed(2)} (piso ${min})`).toBeGreaterThanOrEqual(min);
 }
 
-/** `a` es la superficie MÁS CLARA de las dos. */
-function arriba(vars: Vars, a: string, b: string) {
-  expect(
-    luminancia(hex(vars, a)),
-    `${a} debería ir un escalón arriba de ${b}`
-  ).toBeGreaterThan(luminancia(hex(vars, b)));
-}
-
-describe("tema oscuro: el bicolor no desaparece", () => {
-  it("la barra es claramente más oscura que la página (≥ 1.25:1)", () => {
-    // La barra pinta `bg-subtle` DENTRO de `.nav-dark`; la página, `--bg`.
-    const barra = hex(nav, "--bg-subtle");
-    const pagina = hex(oscuro, "--bg");
-    expect(luminancia(barra)).toBeLessThan(luminancia(pagina));
-    expect(contraste(barra, pagina)).toBeGreaterThanOrEqual(1.25);
-    // …y el hueco de la página (hilo, columnas) tampoco se confunde con ella.
-    expect(contraste(barra, hex(oscuro, "--bg-subtle"))).toBeGreaterThanOrEqual(1.1);
+describe("no hay tema oscuro de la página", () => {
+  it("globals.css no define ni selecciona un tema oscuro", () => {
+    expect(css).not.toContain('data-theme="dark"');
+    expect(css).not.toContain("prefers-color-scheme");
+    expect(css).toMatch(/color-scheme:\s*light/);
   });
 
-  it("en claro la barra sigue siendo azul marino sobre blanco", () => {
-    expect(contraste(hex(nav, "--bg-subtle"), hex(claro, "--bg"))).toBeGreaterThanOrEqual(15);
+  it("la barra lateral también es clara (fondo blanco)", () => {
+    expect(hex(nav, "--bg-subtle")).toBe("#ffffff");
   });
 });
 
-describe("tema oscuro: escalera de superficies", () => {
-  it("hueco < página < fila bajo el cursor ≈ lo que flota < chip < panel < hover", () => {
-    arriba(oscuro, "--bg", "--bg-subtle");
-    arriba(oscuro, "--row-hover", "--bg");
-    arriba(oscuro, "--bg-raised", "--bg");
-    arriba(oscuro, "--chip-bg", "--row-hover");
-    arriba(oscuro, "--bg-panel", "--chip-bg");
-    arriba(oscuro, "--bg-panel", "--bg-raised");
-    arriba(oscuro, "--bg-hover", "--bg-panel");
-  });
-
-  it("cada escalón se ve", () => {
-    piso(oscuro, "--bg", "--bg-subtle", 1.1);
-    piso(oscuro, "--row-hover", "--bg", 1.07);
-    piso(oscuro, "--bg-raised", "--bg", 1.08);
-    // Un botón secundario (bg-secondary) dentro de un diálogo o un cajón.
-    piso(oscuro, "--bg-panel", "--bg-raised", 1.1);
-    piso(oscuro, "--bg-panel", "--bg", 1.2);
-    piso(oscuro, "--chip-bg", "--bg", 1.15);
-    piso(oscuro, "--chip-bg", "--row-hover", 1.07);
-    piso(oscuro, "--bg-hover", "--bg", 1.35);
-    // El contador dentro de un chip de filtro (bg-secondary sobre bg-chip):
-    // antes 1.01:1, el círculo no se veía.
-    piso(oscuro, "--bg-panel", "--chip-bg", 1.1);
-    // Como en claro (1.03:1), el hover de un botón secundario es sutil.
-    piso(oscuro, "--bg-hover", "--bg-panel", 1.05);
-    piso(oscuro, "--bg-hover", "--bg-raised", 1.25);
-    // 215 — el horario no hábil contra la rejilla (bg-card = --bg).
-    piso(oscuro, "--bg", "--cal-off", 1.08);
-  });
-
-  it("los bordes separan (≥ 1.6:1 en la página, ≥ 1.4:1 en lo que flota)", () => {
-    piso(oscuro, "--border", "--bg", 1.6);
-    piso(oscuro, "--border", "--bg-subtle", 1.5);
-    piso(oscuro, "--border", "--bg-raised", 1.4);
-    piso(oscuro, "--border-strong", "--bg", 2.2);
-    piso(oscuro, "--border-strong", "--bg-raised", 2);
-  });
-
-  it("las burbujas se despegan del hilo", () => {
-    piso(oscuro, "--bubble-in", "--chat-bg", 1.3);
-    piso(oscuro, "--bubble-in-border", "--chat-bg", 2);
-    piso(oscuro, "--accent-tint", "--chat-bg", 1.3); // --bubble-out
-    piso(oscuro, "--text", "--bubble-in", 7);
-    piso(oscuro, "--text", "--accent-tint", 7);
-  });
-});
-
-describe("tema oscuro: texto", () => {
-  const superficies = [
-    "--bg-subtle",
-    "--bg",
-    "--row-hover",
-    "--bg-raised",
-    "--bg-panel",
-    "--chip-bg",
-    "--bg-hover",
-    "--accent-tint",
-  ];
+describe("tema claro: texto", () => {
+  const superficies = ["--bg-subtle", "--bg", "--bg-raised", "--bg-panel", "--chip-bg", "--bg-hover", "--accent-tint"];
 
   it("texto, secundario y terciario pasan AA sobre TODA superficie", () => {
     // `text-3` incluido: es el de la `.kicker` (10.5px) y de las horas.
     for (const s of superficies) {
-      piso(oscuro, "--text", s, 7);
-      piso(oscuro, "--text-2", s, 4.5);
-      piso(oscuro, "--text-3", s, 4.5);
-    }
-  });
-
-  it("text-4 alcanza para iconos (≥ 3:1), no para leer", () => {
-    for (const s of ["--bg", "--bg-raised", "--bg-panel", "--accent-tint"]) {
-      piso(oscuro, "--text-4", s, 3);
+      piso(claro, "--text", s, 7);
+      piso(claro, "--text-2", s, 4.5);
+      piso(claro, "--text-3", s, 2.7); // el gris original: horas y etiquetas, no lectura larga
     }
   });
 
   it("las tríadas de estado se leen sobre su propio fondo", () => {
     for (const e of ["success", "warning", "danger", "info"]) {
-      piso(oscuro, `--${e}-text`, `--${e}-tint`, 4.5);
-      piso(oscuro, `--${e}-text`, "--bg", 4.5);
-      arriba(oscuro, `--${e}-tint`, "--bg");
-      piso(oscuro, `--${e}-soft`, `--${e}-tint`, 1.3);
+      piso(claro, `--${e}-text`, `--${e}-tint`, 4.5);
+      piso(claro, `--${e}-text`, "--bg", 4.5);
     }
-    piso(oscuro, "--danger-fg", "--danger", 4.5);
+  });
+
+  it("lo que flota y los chips son los de siempre", () => {
+    expect(claro["--bg-raised"]).toBe(claro["--bg"]);
+    expect(claro["--chip-bg"]).toBe(claro["--bg"]);
+    expect(claro["--row-hover"]).toBe(claro["--bg-subtle"]);
+    expect(claro["--accent-ink"]).toBe("var(--accent)");
+    expect(claro["--ring"]).toBe("var(--accent)");
   });
 });
 
-describe("tema oscuro: acento", () => {
-  const set = resolveAccentSet(DEFAULT_BRANDING.accent, "dark");
-
-  it("el respaldo de globals.css es el que calcula lib/branding", () => {
-    // Si alguien retoca la receta y no el respaldo (o al revés), el primer
-    // pintado sin white-label sale de otro color que el resto.
-    expect(hex(oscuro, "--accent")).toBe(set.accent);
-    expect(hex(oscuro, "--accent-hover")).toBe(set.hover);
-    expect(hex(oscuro, "--accent-soft")).toBe(set.soft);
-    expect(hex(oscuro, "--accent-tint")).toBe(set.tint);
-    expect(hex(oscuro, "--accent-text")).toBe(set.text);
-    expect(hex(oscuro, "--accent-fg")).toBe(set.fg);
+describe("tinta de texto y de títulos", () => {
+  it("el texto es #202020 y los títulos #0a0f2c", () => {
+    expect(hex(claro, "--text")).toBe("#202020");
+    expect(hex(claro, "--heading")).toBe("#0a0f2c");
   });
 
-  it("la fila seleccionada se ve sin leer el color del texto (tint ≥ 1.25:1)", () => {
-    piso(oscuro, "--accent-tint", "--bg", 1.25);
-    piso(oscuro, "--accent-soft", "--bg", 1.5);
+  it("ambas se leen sobre toda superficie clara (≥ 7:1)", () => {
+    for (const s of ["--bg-subtle", "--bg", "--bg-raised", "--bg-panel", "--chip-bg", "--bg-hover", "--accent-tint"]) {
+      piso(claro, "--heading", s, 7);
+      piso(claro, "--text", s, 7);
+    }
   });
 
-  it("el acento rellena (≥ 3:1) y su tinta se lee (≥ 4.5:1)", () => {
-    piso(oscuro, "--accent", "--bg", 3);
-    piso(oscuro, "--accent-fg", "--accent", 4.5);
-    for (const s of ["--bg", "--bg-raised", "--accent-tint"]) {
-      piso(oscuro, "--accent-ink", s, 4.5); // una hora, un enlace, «IA»
+  it("los títulos de la barra también son #0a0f2c sobre blanco", () => {
+    expect(hex(nav, "--heading")).toBe("#0a0f2c");
+    piso(nav, "--heading", "--bg-subtle", 7);
+  });
+
+  it("los h1-h6 usan la tinta de títulos", () => {
+    expect(css).toMatch(/h6 \{\s*color: var\(--heading\);/);
+  });
+});
+
+describe("acento de la página", () => {
+  it("rellena (≥ 3:1) y su tinta se lee (≥ 4.5:1)", () => {
+    piso(claro, "--accent", "--bg", 3);
+    piso(claro, "--accent-fg", "--accent", 4.5);
+    for (const s of ["--bg", "--bg-raised", "--accent-tint", "--bg-subtle"]) {
+      piso(claro, "--accent-text", s, 4.5);
     }
   });
 
   it("el anillo de foco se ve donde hay algo enfocable (≥ 3:1)", () => {
     for (const s of ["--bg-subtle", "--bg", "--bg-raised", "--bg-panel", "--accent-tint"]) {
-      piso(oscuro, "--ring", s, 3);
+      piso(claro, "--ring", s, 3);
     }
   });
 });
 
-describe("tema claro: no cambia", () => {
-  it("lo que flota, la tinta y el anillo del acento son los de siempre", () => {
-    expect(claro["--bg-raised"]).toBe(claro["--bg"]);
-    expect(claro["--accent-ink"]).toBe("var(--accent)");
-    expect(claro["--ring"]).toBe("var(--accent)");
-  });
-
-  it("la barra (.nav-dark) conserva sus valores: se ve igual en los dos temas", () => {
-    // Son los que tenía cuando copiaba al tema oscuro de antes; si la barra
-    // cambia, cambia también en claro, que es el tema que al dueño le gusta.
+describe("barra lateral clara", () => {
+  it("conserva los valores pedidos", () => {
     expect(nav).toMatchObject({
-      "--bg": "#0b1327",
-      "--bg-subtle": "#070e20",
-      "--bg-panel": "#131f3d",
-      "--bg-hover": "#182750",
-      "--text": "#e8eefc",
-      "--text-2": "#a9b8dc",
-      "--text-3": "#7688b0",
-      "--border": "#263866",
-      "--border-strong": "#34498a",
-      "--ring": "var(--accent)",
+      "--bg": "#ffffff",
+      "--bg-subtle": "#ffffff",
+      "--text": "#0a0f2c",
+      "--text-2": "#0a0f2c",
+      "--border": "#e4e7f0",
+      "--border-strong": "#e4e7f0",
     });
-    expect(css).toMatch(/\.nav-dark \{\s*color-scheme: dark;/);
+    expect(css).not.toContain(".nav-dark");
   });
 
   it("dentro de la barra el texto se lee", () => {
     piso(nav, "--text", "--bg-subtle", 7);
-    piso(nav, "--text-2", "--bg-hover", 4.5);
+    piso(nav, "--text-2", "--bg-hover", 7);
     piso(nav, "--text-3", "--bg-subtle", 4.5);
+  });
+
+  it("el ítem activo (texto blanco sobre el acento) se lee", () => {
+    piso(claro, "--accent-fg", "--accent", 4.5);
   });
 });
 
 describe("tinta sobre el acento: blanca solo si pasa AA (≥ 4.5:1)", () => {
-  // Presets + colores que un negocio sí elige: un verde (antes 3.3:1 con
-  // blanco), un amarillo, un rojo, un morado, un gris y un azul profundo.
+  // Presets + colores que un negocio sí elige: un verde, un amarillo, un rojo,
+  // un morado, un gris y un azul profundo.
   const acentos = [
     ...Object.keys(ACCENT_PRESETS),
     "#16a34a",
@@ -262,43 +182,22 @@ describe("tinta sobre el acento: blanca solo si pasa AA (≥ 4.5:1)", () => {
     "#ffee88",
   ];
 
-  it("en los dos temas y en la barra", () => {
+  it("para cualquier acento elegido", () => {
     for (const a of acentos) {
-      for (const [donde, s] of [
-        ["claro", resolveAccentSet(a, "light")],
-        ["oscuro", resolveAccentSet(a, "dark")],
-        ["barra", resolveNavAccentSet(a)],
-      ] as const) {
-        const c = contraste(s.fg, s.accent);
-        expect(c, `${a} en ${donde}: ${c.toFixed(2)}`).toBeGreaterThanOrEqual(4.5);
-      }
+      const s = resolveAccentSet(a);
+      const c = contraste(s.fg, s.accent);
+      expect(c, `${a}: ${c.toFixed(2)}`).toBeGreaterThanOrEqual(4.5);
     }
   });
 
   it("un acento claro lleva tinta oscura en vez de oscurecerse más", () => {
-    const verde = resolveAccentSet("#16a34a", "light");
+    const verde = resolveAccentSet("#16a34a");
     expect(verde.accent).toBe("#16a34a");
     expect(verde.fg).not.toBe("#ffffff");
   });
 
-  it("en oscuro cada acento se despega de la página y su tinta se lee", () => {
-    const pagina = hex(oscuro, "--bg");
-    for (const a of acentos) {
-      const s = resolveAccentSet(a, "dark");
-      expect(contraste(s.accent, pagina), `${a}: relleno`).toBeGreaterThanOrEqual(3);
-      expect(contraste(s.text, s.tint), `${a}: tinta sobre tint`).toBeGreaterThanOrEqual(4.5);
-      expect(contraste(s.text, pagina), `${a}: tinta sobre la página`).toBeGreaterThanOrEqual(4.5);
-      // El tono ayuda (un rojo se distingue del azul marino aunque su
-      // luminancia se le acerque); el azul Vocero lleva su propio piso, 1.25.
-      expect(contraste(s.tint, pagina), `${a}: tint`).toBeGreaterThanOrEqual(1.1);
-    }
-  });
-
-  it("en la barra, el acento se calcula contra SU fondo (≥ 3.5:1)", () => {
-    for (const a of acentos) {
-      const s = resolveNavAccentSet(a);
-      expect(contraste(s.accent, hex(nav, "--bg")), a).toBeGreaterThanOrEqual(3.5);
-      expect(contraste(s.text, s.tint), `${a}: tinta sobre tint`).toBeGreaterThanOrEqual(4.5);
-    }
+  it("el acento por defecto es el azul Vocero #0328ba", () => {
+    expect(DEFAULT_BRANDING.accent).toBe("#0328ba");
+    expect(hex(claro, "--accent")).toBe("#0328ba");
   });
 });

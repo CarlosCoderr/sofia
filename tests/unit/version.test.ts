@@ -27,22 +27,15 @@ describe("versión de la app", () => {
     expect(config).not.toMatch(/["']\d+\.\d+\.\d+["']/);
   });
 
-  it("la insignia no cablea el nombre del producto", () => {
-    // Esto es white-label: una instancia rebautizada que dice "Vocero" en el
-    // tooltip delata el producto de debajo justo donde el operador la mira
-    // todos los días.
+  it("la barra lateral ya no muestra la versión ni el commit", () => {
+    // Se quitó a propósito de la barra lateral. La versión sigue disponible en
+    // `/api/health` (con `commitVerified`), que es lo que consultan los operadores.
     const nav = readFileSync(
       path.join(RAIZ, "src", "components", "app-nav.tsx"),
       "utf8"
     );
-    // Se busca la llamada real. Antes buscaba `versionLabel()`, que no existe
-    // en el componente (se llama con el commit): el índice era -1 y la prueba
-    // miraba, por casualidad, el final del archivo.
-    const llamada = nav.indexOf("versionLabel(version.commit)");
-    expect(llamada).toBeGreaterThan(0);
-    const insignia = nav.slice(llamada - 600, llamada + 300);
-    expect(insignia).toContain("branding.name");
-    expect(insignia).not.toMatch(/`Vocero \$\{/);
+    expect(nav).not.toContain("versionLabel");
+    expect(nav).not.toContain("UNVERIFIED_COMMIT_NOTE");
   });
 
   it("docker compose arranca por defecto la imagen de esta misma versión", () => {
@@ -152,16 +145,6 @@ describe("un commit que no salió del build se presenta como NO verificado", () 
     );
     expect(m.versionTitle("Clínica Sur", { commit: "", verified: false })).toBe(
       "Clínica Sur 1.3.0"
-    );
-  });
-
-  it("la insignia pinta la advertencia SOLO para un commit sin verificar", () => {
-    const nav = readFileSync(
-      path.join(RAIZ, "src", "components", "app-nav.tsx"),
-      "utf8"
-    );
-    expect(nav).toMatch(
-      /\{version\.commit && !version\.verified && \([\s\S]{0,400}UNVERIFIED_COMMIT_NOTE/
     );
   });
 

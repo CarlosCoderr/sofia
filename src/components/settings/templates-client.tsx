@@ -35,6 +35,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { SearchSelect } from "@/components/ui/search-select";
 
 type Category = "UTILITY" | "MARKETING";
 
@@ -327,10 +328,10 @@ function HowItWorks({ defaultOpen }: { defaultOpen: boolean }) {
             </ul>
           </details>
           <p className="flex flex-wrap gap-4 text-xs">
-            <Link className="inline-flex items-center gap-1 underline" href="/inbox">
+            <Link className="inline-flex items-center gap-1 underline" href="/bandeja">
               <Inbox className="h-3.5 w-3.5" /> Ir a la Bandeja
             </Link>
-            <Link className="inline-flex items-center gap-1 underline" href="/contacts">
+            <Link className="inline-flex items-center gap-1 underline" href="/contactos">
               <Send className="h-3.5 w-3.5" /> Ir a Contactos
             </Link>
           </p>
@@ -448,22 +449,20 @@ function CreateForm({
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="tpl-lang">Idioma del mensaje</Label>
-            <select
+            <SearchSelect
               id="tpl-lang"
               value={language}
-              onChange={(e) => setLanguage(e.target.value)}
-              className="flex h-9 w-full rounded-md border border-input bg-card px-3 text-sm"
-            >
-              {TEMPLATE_LANGUAGE_GROUPS.map((g) => (
-                <optgroup key={g.id} label={g.label}>
-                  {TEMPLATE_LANGUAGES.filter((l) => l.group === g.id).map((l) => (
-                    <option key={l.code} value={l.code}>
-                      {l.name}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
+              onChange={setLanguage}
+              options={TEMPLATE_LANGUAGE_GROUPS.flatMap((g) =>
+                TEMPLATE_LANGUAGES.filter((l) => l.group === g.id).map((l) => ({
+                  value: l.code,
+                  label: l.name,
+                  group: g.label,
+                }))
+              )}
+              searchPlaceholder="Buscar idioma…"
+              triggerClassName="bg-card"
+            />
           </div>
         </div>
 

@@ -177,7 +177,7 @@ export function ZernioConnect({
           {saved.webhook && !saved.webhook.ok && (
             <Aviso>
               {saved.webhook.message ?? "No se pudo dar de alta el webhook en Zernio."}{" "}
-              <Link href="/settings/channels" className="font-semibold underline">
+              <Link href="/ajustes/canales" className="font-semibold underline">
                 Ver el estado de los canales
               </Link>
             </Aviso>

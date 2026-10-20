@@ -4,6 +4,7 @@ import { useState } from "react";
 import { LOSS_REASON_LABEL, type LossReason } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { DialogCloseButton } from "@/components/ui/dialog-close";
 
 const REASONS = Object.keys(LOSS_REASON_LABEL) as LossReason[];
 
@@ -33,10 +34,11 @@ export function LossReasonDialog({
       <div
         role="dialog"
         aria-label="Motivo de pérdida"
-        className="w-full max-w-md rounded-lg border bg-popover p-5 shadow-xl"
+        className="relative w-full max-w-md rounded-lg border bg-popover p-5 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className="mb-1 font-semibold">¿Por qué se perdió?</h3>
+        <DialogCloseButton onClick={onCancel} />
+        <h3 className="mb-1 pr-8 font-semibold">¿Por qué se perdió?</h3>
         <p className="mb-4 text-xs text-text-3">
           {leadName} pasa a Perdido. El motivo es lo único que después explica
           qué cambiar: sin él, la gráfica de pérdidas no dice nada.

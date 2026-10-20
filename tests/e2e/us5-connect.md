@@ -5,7 +5,7 @@
 
 ## Camino feliz
 
-1. Abrir `/settings/whatsapp`.
+1. Abrir `/ajustes/whatsapp`.
    ✅ El wizard explica los DOS orígenes del token (modo directo / modo
    agencia Tech Provider).
 2. Llenar WABA ID + Phone Number ID + token (sin sufijo `-invalid`) →

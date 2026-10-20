@@ -163,7 +163,7 @@ export function OnboardingClient({
                 El agente está encendido y atiende a tus clientes por WhatsApp.
                 Puedes apagarlo cuando quieras desde Agente.
               </p>
-              <Link href="/inbox" className={cn(buttonVariants({ size: "sm" }), "mt-3")}>
+              <Link href="/bandeja" className={cn(buttonVariants({ size: "sm" }), "mt-3")}>
                 Ir a la Bandeja <ArrowRight className="h-4 w-4" />
               </Link>
             </>

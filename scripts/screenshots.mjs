@@ -102,7 +102,7 @@ async function shoot(path, file, ready) {
   console.log("  ✓", file);
 }
 
-await shoot("/inbox", "bandeja.png", async () => {
+await shoot("/bandeja", "bandeja.png", async () => {
   await page.getByRole("button", { name: /María Fernanda/ }).first().click();
   await page.getByText("¿Tienen taladros inalámbricos?").waitFor();
   await page.getByText("Etapa del pipeline").waitFor();
@@ -113,7 +113,7 @@ await shoot("/pipeline", "pipeline.png", async () => {
   await page.getByText("María Fernanda López").first().waitFor();
 });
 
-await shoot("/lab", "laboratorio.png", async () => {
+await shoot("/laboratorio", "laboratorio.png", async () => {
   await page.getByText(/Score 83/).first().waitFor();
   // El reporte de la corrida llega en un segundo fetch: se espera a que el
   // hueco "elige una corrida" desaparezca, no un tiempo fijo.
@@ -122,12 +122,12 @@ await shoot("/lab", "laboratorio.png", async () => {
     .waitFor({ state: "hidden", timeout: 20_000 });
 });
 
-await shoot("/settings/branding", "marca.png", async () => {
+await shoot("/ajustes/marca", "marca.png", async () => {
   await page.getByText("Marca del CRM").waitFor();
   await page.getByText("Logo del negocio").waitFor();
 });
 
-await shoot("/settings/whatsapp", "wizard-whatsapp.png", async () => {
+await shoot("/ajustes/whatsapp", "wizard-whatsapp.png", async () => {
   await page.getByText(/Número conectado/).waitFor();
 });
 

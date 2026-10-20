@@ -151,7 +151,7 @@ try {
   ok("las dos imágenes de creativo quedaron guardadas", !!anuncio && !!anuncioVideo);
   // Calienta las rutas por HTTP: la primera visita compila y un goto con SSE
   // vivo a la vez atasca el servidor de desarrollo.
-  for (const ruta of ["/inbox", "/pipeline"]) await req.get(`${BASE}${ruta}`, { timeout: 180000 });
+  for (const ruta of ["/bandeja", "/pipeline"]) await req.get(`${BASE}${ruta}`, { timeout: 180000 });
 
   // El botón flotante de `next dev` tapa la esquina de la barra lateral: no es
   // parte del producto y no va en las capturas.
@@ -176,7 +176,7 @@ try {
 
     paso = `bandeja ${tema} 1440`;
     console.log(`== ${tema} · escritorio ==`);
-    await page.goto(`${BASE}/inbox`, { waitUntil: "domcontentloaded" });
+    await page.goto(`${BASE}/bandeja`, { waitUntil: "domcontentloaded" });
     await fila(page, CON_ANUNCIO).getByText(`Anuncio · ${TITULAR}`).waitFor();
     ok("el renglón del anuncio dice «Anuncio · titular»", true);
     ok(
@@ -233,7 +233,7 @@ try {
     paso = `bandeja ${tema} 390`;
     console.log(`== ${tema} · teléfono ==`);
     await page.setViewportSize(PHONE);
-    await page.goto(`${BASE}/inbox`, { waitUntil: "domcontentloaded" });
+    await page.goto(`${BASE}/bandeja`, { waitUntil: "domcontentloaded" });
     await fila(page, CON_ANUNCIO).getByText(`Anuncio · ${TITULAR}`).waitFor();
     await page.getByRole("button", { name: /^Anuncios/ }).waitFor();
     ok("a 390 px la bandeja no se desborda", !(await desborda(page)));

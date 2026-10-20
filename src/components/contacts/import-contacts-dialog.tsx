@@ -9,6 +9,7 @@ import {
 } from "@/lib/contact-import";
 import { formatPhone } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { DialogCloseButton } from "@/components/ui/dialog-close";
 
 type Preview = { valid: ImportRow[]; problems: ImportProblem[]; total: number };
 type Result = { created: number; existing: number; paused: number };
@@ -76,10 +77,11 @@ export function ImportContactsDialog({
       <div
         role="dialog"
         aria-label="Importar contactos"
-        className="max-h-[85dvh] w-full max-w-lg overflow-y-auto rounded-lg border bg-card p-5 shadow-xl"
+        className="relative max-h-[85dvh] w-full max-w-lg overflow-y-auto rounded-lg border bg-card p-5 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className="mb-1 font-semibold">Importar contactos</h3>
+        <DialogCloseButton onClick={onClose} />
+        <h3 className="mb-1 pr-8 font-semibold">Importar contactos</h3>
         <p className="mb-4 text-xs text-text-3">
           Un archivo CSV con una columna <strong>nombre</strong> y una{" "}
           <strong>telefono</strong> en el primer renglón. El teléfono va con

@@ -1,5 +1,6 @@
 "use client";
 
+import { DatePicker } from "@/components/ui/date-picker";
 import { addDaysISO } from "@/lib/time/slots";
 import { cn } from "@/lib/utils";
 
@@ -14,15 +15,16 @@ export function RangePicker({
   value,
   onChange,
   today,
-  timezone,
+  presets,
 }: {
   value: Range;
   onChange: (r: Range) => void;
   /** `YYYY-MM-DD` de hoy en la zona del negocio. */
   today: string;
-  timezone: string;
+  /** Atajos propios (el cierre de caja necesita «Hoy» y «Ayer»); por defecto, los de Resultados. */
+  presets?: { label: string; range: Range }[];
 }) {
-  const atajos = shortcuts(today);
+  const atajos = presets ?? shortcuts(today);
   const activo = atajos.find(
     (a) => a.range.from === value.from && a.range.to === value.to
   );
@@ -49,25 +51,24 @@ export function RangePicker({
         ))}
       </div>
       <div className="flex items-center gap-1.5 text-xs text-text-3">
-        <input
-          type="date"
+        <DatePicker
+          compact
           value={value.from}
           max={value.to}
-          onChange={(e) => e.target.value && onChange({ ...value, from: e.target.value })}
-          className="h-8 rounded-md border border-input bg-background px-2 text-xs text-foreground"
-          aria-label="Desde"
+          onChange={(day) => onChange({ ...value, from: day })}
+          ariaLabel="Desde"
+          className="w-32"
         />
         <span aria-hidden>a</span>
-        <input
-          type="date"
+        <DatePicker
+          compact
           value={value.to}
           min={value.from}
-          onChange={(e) => e.target.value && onChange({ ...value, to: e.target.value })}
-          className="h-8 rounded-md border border-input bg-background px-2 text-xs text-foreground"
-          aria-label="Hasta"
+          onChange={(day) => onChange({ ...value, to: day })}
+          ariaLabel="Hasta"
+          className="w-32"
         />
       </div>
-      <span className="text-[11px] text-text-3">Días de {timezone}</span>
     </div>
   );
 }

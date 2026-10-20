@@ -33,6 +33,21 @@ export const envSchema = z.object({
   // 015: motor de agenda. Apagado por defecto — sin el, toda la superficie de
   // agenda responde 404 y la UI no la menciona. Ej.: AGENDA=on
   AGENDA: z.string().optional(),
+  // Módulo SALON (barberías, salones, manicure): catálogo de servicios y
+  // combos, equipo con comisiones, caja y agenda por sillas. Apagado por
+  // defecto — sin él toda su superficie responde 404 y la UI no lo menciona.
+  // Ej.: SALON=on (la agenda por sillas necesita además AGENDA=on)
+  SALON: z.string().optional(),
+  // Correo saliente (opcional): solo para restablecer la contraseña con un
+  // código. Apuntan al servidor SMTP del propio negocio; sin SMTP_HOST y
+  // SMTP_FROM la función se apaga y lo demás funciona igual. Se leen de
+  // process.env directo (server/email/config.ts), aquí solo se documentan.
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.string().optional(),
+  SMTP_SECURE: z.string().optional(),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  SMTP_FROM: z.string().optional(),
   // 016: atribucion de anuncios y reporte a la Conversions API de Meta.
   // Apagada por defecto: sin ella no se captura de que anuncio vino una
   // conversacion, no se le reporta nada a Meta y la superficie da 404.

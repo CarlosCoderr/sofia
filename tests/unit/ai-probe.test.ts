@@ -90,6 +90,30 @@ describe("probeProvider", () => {
     if (!mala.ok) expect(mala.code).toBe("bad_url");
     expect(nunca).not.toHaveBeenCalled();
   });
+
+  it("SSRF: una base URL apuntando a la red interna se rechaza sin tocar la red", async () => {
+    const internas = [
+      "http://localhost/v1",
+      "http://127.0.0.1:8080",
+      "http://169.254.169.254/latest/meta-data", // metadata de nube (AWS/GCP/Azure)
+      "http://10.0.0.5",
+      "http://192.168.1.1",
+      "http://172.16.0.1",
+      "http://[::1]",
+    ];
+    for (const baseUrl of internas) {
+      const nunca = vi.fn();
+      const r = await probeProvider({
+        baseUrl,
+        model: "m",
+        token: "sk-x",
+        fetchImpl: nunca as unknown as typeof fetch,
+      });
+      expect(r.ok, baseUrl).toBe(false);
+      if (!r.ok) expect(r.code, baseUrl).toBe("bad_url");
+      expect(nunca, baseUrl).not.toHaveBeenCalled();
+    }
+  });
 });
 
 describe("listModels", () => {
@@ -145,5 +169,17 @@ describe("listModels", () => {
     });
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.code).toBe("invalid_token");
+  });
+
+  it("SSRF: una base URL interna se rechaza sin tocar la red", async () => {
+    const nunca = vi.fn();
+    const r = await listModels({
+      baseUrl: "http://169.254.169.254",
+      token: "sk-x",
+      fetchImpl: nunca as unknown as typeof fetch,
+    });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.code).toBe("bad_url");
+    expect(nunca).not.toHaveBeenCalled();
   });
 });

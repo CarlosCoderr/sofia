@@ -55,7 +55,7 @@ export function guideFrom(status: OnboardingStatus): Guide {
       description:
         "Ponle nombre y cuéntale a qué se dedica tu negocio. Si quieres ver un ejemplo primero, carga la demo desde la Bandeja y cámbiala por tus datos.",
       done: ready(profile),
-      href: "/agent",
+      href: "/agente",
       cta: "Ir a Agente",
       hint: ready(profile) ? null : (profile?.nextAction ?? null),
     },
@@ -65,7 +65,7 @@ export function guideFrom(status: OnboardingStatus): Guide {
       description:
         "Es la cuenta con la que tu agente piensa: OpenRouter o cualquier proveedor compatible con la API de OpenAI. La creas y la pagas tú; aquí solo pegas la llave y eliges el modelo.",
       done: ready(ai),
-      href: "/settings/ai",
+      href: "/ajustes/ia",
       cta: "Vincular proveedor",
       hint: ai?.problem ?? null,
     },
@@ -75,7 +75,7 @@ export function guideFrom(status: OnboardingStatus): Guide {
       description:
         "Conecta el número donde te escriben tus clientes. El CRM registra el webhook en Meta por ti al guardar.",
       done: ready(whatsapp),
-      href: "/settings/whatsapp",
+      href: "/ajustes/whatsapp",
       cta: "Conectar WhatsApp",
       hint: whatsapp?.problem ?? null,
     },
@@ -89,7 +89,7 @@ export function guideFrom(status: OnboardingStatus): Guide {
       description:
         "Define tus horarios y cómo se entrega la reunión para que tu agente pueda agendar por ti.",
       done: ready(calendar),
-      href: "/settings/calendar",
+      href: "/ajustes/calendario",
       cta: "Configurar agenda",
       hint: calendar.problem,
     });

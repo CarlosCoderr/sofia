@@ -7,7 +7,7 @@
 ## Preparación
 
 1. `DELETE /api/dev/wa-mock/outbox` — limpiar el harness.
-2. Login en `/login` y abrir `/inbox`.
+2. Login en `/iniciar-sesion` y abrir `/bandeja`.
 
 ## Camino feliz
 

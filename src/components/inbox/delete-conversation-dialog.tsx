@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { DialogCloseButton } from "@/components/ui/dialog-close";
 
 /**
  * 026 — Confirmación de borrado. Es irreversible, así que dice con todas sus
@@ -11,10 +12,13 @@ import { Button } from "@/components/ui/button";
  */
 export function DeleteConversationDialog({
   contactName,
+  salesCount = 0,
   onCancel,
   onConfirm,
 }: {
   contactName: string;
+  /** Ventas del contacto en Caja; con alguna, borrar al contacto lleva una advertencia. */
+  salesCount?: number;
   onCancel: () => void;
   /** Devuelve el mensaje de error, o null si se eliminó. */
   onConfirm: (alsoContact: boolean) => Promise<string | null>;
@@ -53,10 +57,11 @@ export function DeleteConversationDialog({
         role="dialog"
         aria-modal="true"
         aria-label="Eliminar conversación"
-        className="w-full max-w-md rounded-lg border bg-card p-5 shadow-xl"
+        className="relative w-full max-w-md rounded-lg border bg-card p-5 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className="mb-1 font-semibold">¿Eliminar esta conversación?</h3>
+        <DialogCloseButton onClick={onCancel} disabled={busy} />
+        <h3 className="mb-1 pr-8 font-semibold">¿Eliminar esta conversación?</h3>
         <p className="mb-3 text-[13px] leading-relaxed text-text-2">
           Se borran los mensajes con {contactName}, sus adjuntos, la ficha y lo
           que el agente recuerda de esta conversación. Si vuelve a escribir, el
@@ -80,6 +85,18 @@ export function DeleteConversationDialog({
             </span>
           </span>
         </label>
+
+        {alsoContact && salesCount > 0 && (
+          <p
+            role="alert"
+            className="mt-3 rounded-md border border-warning-soft bg-warning-tint p-2.5 text-xs leading-relaxed text-warning-text"
+          >
+            <strong>Atención:</strong> Este contacto cuenta con historial de ventas en Caja. El
+            registro del dinero y las comisiones se conservarán en los reportes contables, pero
+            sus conversaciones, leads y ficha de contacto serán eliminados permanentemente.
+            ¿Deseas continuar?
+          </p>
+        )}
 
         <p className="mt-3 text-xs font-medium text-danger-text">No se puede deshacer.</p>
 

@@ -49,7 +49,8 @@ export function BrandMark({
 }
 
 /**
- * Mosaico cuadrado con degradado del acento: es el favicon en grande. Con un
+ * Mosaico cuadrado de la marca, con fondo transparente (`.brand-tile`): la
+ * inicial o el símbolo van en el color del acento, no en blanco sobre un fondo. Con un
  * logo subido lleva el logo (el MISMO archivo y la MISMA URL versionada que
  * la pestaña, así lo que se sube en Ajustes → Marca se ve en los dos sitios);
  * sin él, la "v" de Vocero o la inicial del nombre white-label.
@@ -64,7 +65,7 @@ export function BrandTile({
   return (
     <span
       className={cn(
-        "brand-tile flex shrink-0 items-center justify-center overflow-hidden text-brand-fg",
+        "brand-tile flex shrink-0 items-center justify-center overflow-hidden text-brand",
         className
       )}
       aria-hidden

@@ -1,4 +1,5 @@
 import { apiError, withAuth } from "@/lib/api";
+import { canConfigure } from "@/lib/auth/roles";
 import { getEnv } from "@/lib/env";
 import { isChannelEnabled } from "@/server/channels/enabled";
 import { registerWebhookForNumber } from "@/server/whatsapp/connect";
@@ -40,6 +41,9 @@ export const GET = withAuth(async () => {
  * para reintentar si Meta falló, sin volver a pegar el token.
  */
 export const POST = withAuth(async (session) => {
+  if (!canConfigure(session.role)) {
+    return apiError(403, "forbidden", "Solo el dueño o un administrador puede hacer esto");
+  }
   const creds = await getCredentialsByOrg(session.organizationId);
   if (!creds) {
     return apiError(

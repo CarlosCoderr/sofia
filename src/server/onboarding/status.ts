@@ -85,7 +85,7 @@ export async function onboardingStatus(
           ? "Llave guardada en Ajustes → IA"
           : "Respaldo del entorno (OPENROUTER_*)"
         : "Pega la llave de tu proveedor y elige el modelo en Ajustes → IA",
-      href: "/settings/ai",
+      href: "/ajustes/ia",
       // «Sin configurar» es lo obvio del paso; lo que sí hay que decir es por
       // qué una llave que el dueño YA pegó no sirve.
       problem:
@@ -103,7 +103,7 @@ export async function onboardingStatus(
           : channel
             ? "Vuelve a conectar el número con un token vigente"
             : "Vincular tu número",
-      href: "/settings/whatsapp",
+      href: "/ajustes/whatsapp",
       problem:
         channel?.status === "reconnect_required"
           ? "Meta dejó de aceptar el token de WhatsApp: vuelve a conectar el número."
@@ -149,7 +149,7 @@ function pasoPerfil(profile: Perfil | undefined, hayConocimiento: boolean): Read
     nextAction: listo
       ? "Nombre, instrucciones y conocimiento revisados"
       : "Dale un nombre y escribe sus instrucciones o carga conocimiento del negocio",
-    href: "/agent",
+    href: "/agente",
     problem: null,
   };
 }
@@ -198,7 +198,7 @@ async function pasoAgenda(organizationId: string, db: Db): Promise<ReadinessStep
       status === "ready"
         ? "Horarios y conector listos"
         : "Guarda tus horarios y cómo se entrega la reunión en Ajustes → Agenda",
-    href: "/settings/calendar",
+    href: "/ajustes/calendario",
     problem,
   };
 }

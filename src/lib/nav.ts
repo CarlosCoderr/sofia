@@ -2,12 +2,18 @@ import {
   CalendarDays,
   ChartColumn,
   FlaskConical,
+  Images,
   Inbox,
   Kanban,
+  LayoutDashboard,
   ListChecks,
+  Scissors,
+  UserCheck,
   Settings,
   Sparkles,
   Users,
+  UsersRound,
+  Wallet,
   type LucideIcon,
 } from "lucide-react";
 import { canConfigure } from "@/lib/auth/roles";
@@ -38,49 +44,97 @@ export type NavGroup = {
 
 /** La única entrada que va abajo, separada del resto. */
 export const SETTINGS_ITEM: NavItem = {
-  href: "/settings",
+  href: "/ajustes",
   label: "Ajustes",
   icon: Settings,
 };
 
+/** Encabezado del bloque donde vive Ajustes, abajo de la barra. */
+export const SYSTEM_TITLE = "Sistema";
+
 /**
- * Grupos de la barra lateral, en el orden en que se leen: lo que se atiende
- * cada día, lo que configura al agente y, al final, cómo va el negocio.
+ * Hoja de ruta v2.0: Bandeja, Pipeline y el bloque Agente (Guía de inicio,
+ * Agente, Laboratorio y Resultados) siguen existiendo —sus rutas funcionan—,
+ * pero la v1.0 enfoca la barra en la operación del salón o barbería. Poner en
+ * `true` los devuelve al menú, sin tocar nada más.
+ */
+export const NAV_V2 = false;
+
+/**
+ * Grupos de la barra lateral, en el orden en que se leen. En la v1.0 es uno:
+ * Trabajo (Panel · Caja · Citas · Clientes · Contactos · Servicios · Equipo ·
+ * Medios); Ajustes va aparte, abajo, bajo «Sistema».
  */
 export function appNavGroups({
   agenda = false,
+  salon = false,
   role,
 }: {
   /** 015 — "Citas" solo existe si esta instancia encendió la agenda. */
   agenda?: boolean;
+  /** Módulo SALON — Panel, Caja, Servicios, Equipo y Clientes (la agenda por sillas vive dentro de Citas). */
+  salon?: boolean;
   /** #86 — La guía de inicio solo para quien puede configurar. */
   role?: string | null;
 }): NavGroup[] {
+  // SALON — barbería o salón. Un miembro del equipo no ve el panel, la caja,
+  // el catálogo, el equipo ni los clientes (es dinero y configuración).
+  const salonManager = salon && canConfigure(role);
+  // La agenda por sillas no es un ítem aparte: es la vista principal de Citas
+  // (con su calendario y bloqueos en otra pestaña).
   const trabajo: NavItem[] = [
-    { href: "/inbox", label: "Bandeja", icon: Inbox, badge: true },
-    { href: "/pipeline", label: "Pipeline", icon: Kanban },
-    { href: "/contacts", label: "Contactos", icon: Users },
+    ...(salonManager ? [{ href: "/panel", label: "Panel", icon: LayoutDashboard }] : []),
+    ...(NAV_V2
+      ? [
+          { href: "/bandeja", label: "Bandeja", icon: Inbox, badge: true },
+          { href: "/pipeline", label: "Pipeline", icon: Kanban },
+        ]
+      : []),
+    ...(salonManager ? [{ href: "/caja", label: "Caja", icon: Wallet }] : []),
+    ...(agenda ? [{ href: "/citas", label: "Citas", icon: CalendarDays }] : []),
+    ...(salonManager ? [{ href: "/clientes", label: "Clientes", icon: UserCheck }] : []),
+    { href: "/contactos", label: "Contactos", icon: Users },
+    ...(salonManager
+      ? [
+          { href: "/servicios", label: "Servicios", icon: Scissors },
+          { href: "/equipo", label: "Equipo", icon: UsersRound },
+        ]
+      : []),
+    { href: "/medios", label: "Medios", icon: Images },
   ];
-  // Citas va después de Contactos: es el paso siguiente de un trato, no una
-  // sección aparte.
-  if (agenda) trabajo.push({ href: "/bookings", label: "Citas", icon: CalendarDays });
+  const groups: NavGroup[] = [{ title: "Trabajo", items: trabajo }];
+  if (!NAV_V2) return groups;
 
   const agente: NavItem[] = [];
   // Un miembro del equipo no puede hacer ninguno de los pasos de la guía.
   if (canConfigure(role)) {
-    agente.push({ href: "/onboarding", label: "Guía de inicio", icon: ListChecks });
+    agente.push({ href: "/guia-de-inicio", label: "Guía de inicio", icon: ListChecks });
   }
   agente.push(
-    { href: "/agent", label: "Agente", icon: Sparkles },
-    { href: "/lab", label: "Laboratorio", icon: FlaskConical }
+    { href: "/agente", label: "Agente", icon: Sparkles },
+    { href: "/laboratorio", label: "Laboratorio", icon: FlaskConical }
   );
+  groups.push({ title: "Agente", items: agente });
+  // 019 — Se mide al final: primero se atiende y se organiza.
+  groups.push({ items: [{ href: "/resultados", label: "Resultados", icon: ChartColumn }] });
+  return groups;
+}
 
-  return [
-    { title: "Trabajo", items: trabajo },
-    { title: "Agente", items: agente },
-    // 019 — Se mide al final: primero se atiende y se organiza.
-    { items: [{ href: "/results", label: "Resultados", icon: ChartColumn }] },
-  ];
+/**
+ * A dónde se entra al abrir la raíz o iniciar sesión con el módulo SALON
+ * encendido: el Panel, para quien lo ve (dueño o administrador); un miembro del
+ * equipo, que no tiene Panel, va a lo primero de su menú (Citas o Contactos).
+ * Siempre es una entrada visible del menú, así queda marcada como activa.
+ */
+export function salonHomePath({
+  agenda = false,
+  role,
+}: {
+  agenda?: boolean;
+  role?: string | null;
+}): string {
+  if (canConfigure(role)) return "/panel";
+  return agenda ? "/citas" : "/contactos";
 }
 
 export type SettingsLink = { href: string; label: string };
@@ -120,23 +174,23 @@ export function settingsSections({
   // 023 — "Estado" reúne todos los canales; con WhatsApp solo no aporta nada
   // que su pantalla no diga, así que no existe (ADR-001).
   if (instagram || messenger || tiktok) {
-    canales.push({ href: "/settings/channels", label: "Estado" });
+    canales.push({ href: "/ajustes/canales", label: "Estado" });
   }
-  canales.push({ href: "/settings/whatsapp", label: "WhatsApp" });
-  if (instagram) canales.push({ href: "/settings/instagram", label: "Instagram" });
-  if (messenger) canales.push({ href: "/settings/messenger", label: "Messenger" });
-  if (tiktok) canales.push({ href: "/settings/tiktok", label: "TikTok" });
+  canales.push({ href: "/ajustes/whatsapp", label: "WhatsApp" });
+  if (instagram) canales.push({ href: "/ajustes/instagram", label: "Instagram" });
+  if (messenger) canales.push({ href: "/ajustes/messenger", label: "Messenger" });
+  if (tiktok) canales.push({ href: "/ajustes/tiktok", label: "TikTok" });
 
   // #85 — el proveedor de IA se configura aquí; el entorno queda de respaldo.
-  const agente: SettingsLink[] = [{ href: "/settings/ai", label: "IA" }];
-  if (agenda) agente.push({ href: "/settings/calendar", label: "Agenda" });
+  const agente: SettingsLink[] = [{ href: "/ajustes/ia", label: "IA" }];
+  if (agenda) agente.push({ href: "/ajustes/calendario", label: "Agenda" });
 
   const negocio: SettingsLink[] = [
-    { href: "/settings/branding", label: "Marca" },
-    { href: "/settings/templates", label: "Plantillas" },
-    { href: "/settings/team", label: "Equipo" },
+    { href: "/ajustes/marca", label: "Marca" },
+    { href: "/ajustes/plantillas", label: "Plantillas" },
+    { href: "/ajustes/equipo", label: "Equipo" },
   ];
-  if (atribucion) negocio.push({ href: "/settings/ads", label: "Anuncios" });
+  if (atribucion) negocio.push({ href: "/ajustes/anuncios", label: "Anuncios" });
 
   return [
     { title: "Canales", links: canales },
@@ -145,7 +199,7 @@ export function settingsSections({
   ];
 }
 
-/** Activa si la ruta es la entrada o cuelga de ella (`/inbox/cv_123`). */
+/** Activa si la ruta es la entrada o cuelga de ella (`/bandeja/cv_123`). */
 export function isNavActive(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`);
 }

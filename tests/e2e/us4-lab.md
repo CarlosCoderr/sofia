@@ -10,7 +10,7 @@
 
 ## Corrida 1
 
-3. En `/lab`: pulsar "Correr evaluación".
+3. En `/laboratorio`: pulsar "Correr evaluación".
    ✅ La UI muestra el subtítulo permanente "Sandbox interno — no envía
    mensajes reales", progreso en vivo (n/6) sin bloquear la navegación.
 4. Al terminar:
@@ -24,7 +24,7 @@
 ## Cerrar el loop
 
 5. En el hallazgo: "Agregar al conocimiento" → editar/confirmar → guardado en
-   el KB (visible en `/agent`).
+   el KB (visible en `/agente`).
 6. Re-correr la evaluación.
    ✅ El historial muestra 2 corridas; la nueva con score 100 y delta +17.
 

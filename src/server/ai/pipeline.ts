@@ -30,6 +30,8 @@ import {
 import { agendaEnabled } from "@/server/agenda/flag";
 import { bookSlot, offerSlots } from "@/server/agenda/agent";
 import { getOffers, mapaDeHuecosParaModelo } from "@/server/agenda/offers";
+import { salonEnabled } from "@/server/business/flag";
+import { getComboTriggerInstruction } from "@/server/ai/barbershop-context";
 
 /**
  * Turno del agente (FR-021..FR-025).
@@ -272,6 +274,19 @@ export async function runAgentTurn(
   const ofertas = agenda ? await getOffers(organizationId, conversationId) : [];
   const mapaDeHuecos = mapaDeHuecosParaModelo(ofertas);
 
+  /**
+   * 031 — Módulo SALON: si el mensaje trae la palabra clave de un combo activo
+   * (el texto que un anuncio de Meta/TikTok precarga), este turno recibe la
+   * orden de saludar reconociendo la promoción. Apagado, no consulta nada. Un
+   * fallo aquí degrada (el agente responde sin la instrucción), nunca tumba el turno.
+   */
+  const instruccionCombo = salonEnabled()
+    ? await getComboTriggerInstruction(organizationId, lastInbound.text).catch((err) => {
+        console.error("[agente] no se pudo evaluar la oferta del anuncio:", err);
+        return null;
+      })
+    : null;
+
   const messages: ChatMessage[] = [
     {
       role: "system",
@@ -290,6 +305,7 @@ export async function runAgentTurn(
     ...(mapaDeHuecos
       ? [{ role: "system" as const, content: mapaDeHuecos }]
       : []),
+    ...(instruccionCombo ? [{ role: "system" as const, content: instruccionCombo }] : []),
     // 029 — Lo último que lee el modelo: contestar con el JSON de la acción.
     { role: "system", content: TURN_FORMAT_REMINDER },
   ];

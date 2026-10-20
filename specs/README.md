@@ -26,6 +26,7 @@ producto** — y saberlo antes de leerla ahorra una confusión.
 | `029-agente-no-calla` | Ligero | spec (el agente incluido contesta saludos y «hola, prueba»; solo calla ante un cierre; recordatorio de formato al final del turno; `pnpm eval:silencios` mide contra el modelo real) |
 | `027-importar-contactos` | Ligero, con el modelo de datos dentro | spec (importar un CSV de contactos con vista previa y marcar contactos «sin agente»; puerto de Vocero Cloud #108, migración aditiva `0019`) |
 | `030-secreto-zernio-cifrado` | Ciclo completo | spec, plan, tasks (el secreto de firma de Zernio de los tres canales sociales pasa a AES-256-GCM; migración aditiva `0020` y los secretos ya guardados se cifran al arrancar la app) |
+| `031-modulo-salon` | Spec | spec (barberías, salones y manicure tras `SALON`: servicios y combos, equipo con comisiones y horarios, caja y agenda por sillas; migración aditiva `0021`, índice de citas único por instante y silla, y el motor de disponibilidad llena una franja cuando coinciden tantas citas como profesionales) |
 | `025-despacho-recuerda` | Ciclo completo | spec, plan, tasks (el despacho anota qué mensajes debe; puerto de Vocero Cloud #111, #116 y #117, migración aditiva `0017`; enmienda el contrato del 021) |
 
 Los tres carriles —ciclo completo, ligero y exento— están definidos en el

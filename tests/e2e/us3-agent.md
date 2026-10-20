@@ -5,7 +5,7 @@
 
 ## Preparación
 
-1. En `/agent`: encender el toggle global y agregar una entrada P/R al KB
+1. En `/agente`: encender el toggle global y agregar una entrada P/R al KB
    ("¿Hacen envíos?" → "Sí, a todo México en 2-5 días").
    ✅ El contador de tamaño del KB refleja la entrada.
 

@@ -67,6 +67,8 @@ export function ContactPanel({
   const [stages, setStages] = useState<StageDto[]>([]);
   const [currentStageId, setCurrentStageId] = useState<string | null>(null);
   const [leadId, setLeadId] = useState<string | null>(null);
+  // Ventas del contacto en Caja: borrar al contacto lo desvincula de ellas y se avisa.
+  const [salesCount, setSalesCount] = useState(0);
   // 018: de qué anuncio llegó; null si escribió por su cuenta.
   const [anuncio, setAnuncio] = useState<AnuncioDto | null>(null);
   // Quién responde (agente incluido, cerebro externo o los dos): sin esto, el
@@ -106,6 +108,7 @@ export function ContactPanel({
       setFicha(detail.contact?.ficha ?? {});
       setCurrentStageId(detail.stage?.id ?? null);
       setLeadId(detail.lead?.id ?? null);
+      setSalesCount(detail.salesCount ?? 0);
       setAnuncio(detail.anuncio ?? null);
     }
     if (stagesRes) setStages(stagesRes.stages);
@@ -277,7 +280,7 @@ export function ContactPanel({
                     incluido y tu cerebro externo contestan a la vez.
                   </p>
                   <Link
-                    href="/agent"
+                    href="/agente"
                     className="mt-1 inline-block font-medium underline underline-offset-2"
                   >
                     Revisar en Agente →
@@ -299,7 +302,7 @@ export function ContactPanel({
                   Tu cerebro externo no está en línea: nadie contesta en automático
                   hasta que vuelva.
                   <Link
-                    href="/agent"
+                    href="/agente"
                     className="ml-1 whitespace-nowrap font-medium text-brand-text underline underline-offset-2 hover:text-brand"
                   >
                     Ver en Agente →
@@ -317,7 +320,7 @@ export function ContactPanel({
                     ? "El agente de Vocero no responde por su cuenta. Configura lo básico y enciéndelo (o conecta tu propio bot por la API)."
                     : "Falta el proveedor de IA (o está pausado) para que el agente responda, o conecta tu propio bot por la API."}
                   <Link
-                    href={aiConfigured ? "/agent" : "/settings/ai"}
+                    href={aiConfigured ? "/agente" : "/ajustes/ia"}
                     className="ml-1 whitespace-nowrap font-medium text-brand-text underline underline-offset-2 hover:text-brand"
                   >
                     {aiConfigured ? "Configurar agente →" : "Configurar la IA →"}
@@ -424,6 +427,7 @@ export function ContactPanel({
       {confirmingDelete && onDeleteConversation && (
         <DeleteConversationDialog
           contactName={conversation.contact.name}
+          salesCount={salesCount}
           onCancel={() => setConfirmingDelete(false)}
           onConfirm={onDeleteConversation}
         />

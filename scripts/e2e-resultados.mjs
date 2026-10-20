@@ -547,10 +547,10 @@ async function main() {
   ok("higiene: sin cambios", igual((f) => [f.hygiene.silentCount, f.hygiene.failedMessages.map((m) => m.count)]));
 
   console.log("\n== 8 · La pantalla y la sesión ==");
-  const pagina = await fetch(`${BASE}/results`, { headers: { cookie } });
+  const pagina = await fetch(`${BASE}/resultados`, { headers: { cookie } });
   const html = await pagina.text();
-  ok("/results carga con sesión", pagina.status === 200 && html.includes("Resultados"), `status=${pagina.status}`);
-  ok("y el menú lleva a Resultados", html.includes('href="/results"'));
+  ok("/resultados carga con sesión", pagina.status === 200 && html.includes("Resultados"), `status=${pagina.status}`);
+  ok("y el menú lleva a Resultados", html.includes('href="/resultados"'));
   for (const b of ["sales", "ads", "bot", "hygiene"]) {
     const r = await fetch(`${BASE}/api/analytics/${b}`);
     ok(`sin sesión, /api/analytics/${b} responde 401`, r.status === 401, `status=${r.status}`);

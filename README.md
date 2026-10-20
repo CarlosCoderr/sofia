@@ -372,8 +372,11 @@ solas al arrancar.
 
 ### Primer arranque
 
-1. Entra y **regístrate**: el primer registro crea tu organización y cierra el
-   registro público.
+1. **Crea tu cuenta por backend** (la app no tiene pantalla de registro):
+   `NEW_PASSWORD='tu-contraseña' pnpm crear-usuario tu@correo.com "Tu Nombre"`
+   (en el contenedor: `docker exec -e NEW_PASSWORD='…' <contenedor> node crear-usuario.mjs tu@correo.com "Tu Nombre"`).
+   La primera cuenta crea tu organización y queda como propietaria; después, entra
+   en `/iniciar-sesion`.
 2. Lo primero que ves es la **Guía de inicio**: tres pasos —configura tu
    agente, vincula tu proveedor de IA, conecta tu número de WhatsApp— y, con la
    agenda encendida (`AGENDA=on`), un cuarto para tus horarios. Cada botón te

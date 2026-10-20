@@ -12,7 +12,7 @@ y esas pulsaciones se perdían **en silencio**: el usuario veía la bandeja
 entera sin filtrar. Por eso el input es NO controlado (`defaultValue` + ref) y
 al montar se adopta lo que ya haya en el DOM.
 
-1. Abrir `/inbox` y escribir en el buscador **antes** de que aparezcan las
+1. Abrir `/bandeja` y escribir en el buscador **antes** de que aparezcan las
    conversaciones (`waitUntil: "commit"`).
    ✅ El texto sigue en la caja tras hidratar.
    ✅ La lista queda filtrada a esa persona.

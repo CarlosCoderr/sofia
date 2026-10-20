@@ -50,13 +50,13 @@ const PHONE = { width: 390, height: 844 };
 const TABLET = { width: 820, height: 1180 };
 const DESKTOP = { width: 1440, height: 900 };
 const RUTAS = [
-  "/inbox",
+  "/bandeja",
   "/pipeline",
-  "/contacts",
-  "/results",
-  "/agent",
-  "/lab",
-  "/settings/whatsapp",
+  "/contactos",
+  "/resultados",
+  "/agente",
+  "/laboratorio",
+  "/ajustes/whatsapp",
 ];
 
 mkdirSync(SHOTS, { recursive: true });
@@ -182,15 +182,15 @@ ok(
 );
 await phone.screenshot({ path: `${SHOTS}/phone-cajon-abierto.png` });
 await linkBandeja.click();
-await until(async () => phone.url().includes("/inbox"), 15000);
-ok("navegar desde el cajón lleva a la Bandeja", phone.url().includes("/inbox"));
+await until(async () => phone.url().includes("/bandeja"), 15000);
+ok("navegar desde el cajón lleva a la Bandeja", phone.url().includes("/bandeja"));
 ok(
   "el cajón se cierra solo al navegar",
   await until(async () => !(await linkBandeja.isVisible()), 5000)
 );
 
 console.log("\n== 3. Teléfono: la Bandeja es maestro-detalle ==");
-await phone.goto(`${BASE}/inbox`);
+await phone.goto(`${BASE}/bandeja`);
 const fila = phone.getByText(NAME).first();
 await fila.waitFor({ timeout: 20000 });
 ok("la lista de conversaciones ocupa la pantalla", await fila.isVisible());
@@ -272,7 +272,7 @@ console.log("\n== 5. Tableta (820×1180) ==");
 const tablet = phone;
 await tablet.setViewportSize(TABLET);
 await recorrer(tablet, "tablet");
-await tablet.goto(`${BASE}/inbox`);
+await tablet.goto(`${BASE}/bandeja`);
 await tablet.getByText(NAME).first().click();
 await tablet.getByPlaceholder("Escribe una respuesta").waitFor({ timeout: 20000 });
 const dosColumnas = await tablet.evaluate(() => {
@@ -290,7 +290,7 @@ console.log("\n== 6. Escritorio (1440×900): nada cambió ==");
 const desk = tablet;
 await desk.setViewportSize(DESKTOP);
 await recorrer(desk, "desktop");
-await desk.goto(`${BASE}/inbox`);
+await desk.goto(`${BASE}/bandeja`);
 await desk.getByText(NAME).first().click();
 await desk.getByPlaceholder("Escribe una respuesta").waitFor({ timeout: 20000 });
 ok(
@@ -417,11 +417,11 @@ const convResp = (await (await req.get(`${BASE}/api/conversations`)).json())
 await req.patch(`${BASE}/api/conversations/${convResp?.id}`, {
   data: { reactivate: true, aiEnabled: true },
 });
-await desk.goto(`${BASE}/inbox`);
+await desk.goto(`${BASE}/bandeja`);
 await desk.getByText(NAME).first().click();
 await probarInterruptor(desk, "IA en esta conversación");
 
-await desk.goto(`${BASE}/agent`, { waitUntil: "domcontentloaded" });
+await desk.goto(`${BASE}/agente`, { waitUntil: "domcontentloaded" });
 await probarInterruptor(desk, "Agente encendido");
 await desk.screenshot({ path: `${SHOTS}/desktop-agente.png` });
 
@@ -433,7 +433,7 @@ const contraste = (a, b) => {
   return (x + 0.05) / (y + 0.05);
 };
 await ctx.addCookies([{ name: "vocero-theme", value: "dark", url: BASE }]);
-await desk.goto(`${BASE}/contacts`, { waitUntil: "domcontentloaded" });
+await desk.goto(`${BASE}/contactos`, { waitUntil: "domcontentloaded" });
 const nuevo = desk.getByRole("button", { name: /Nuevo contacto/ });
 const dialogo = desk.locator('[role="dialog"][aria-label="Nuevo contacto"]');
 // Un clic antes de hidratar se pierde: reintenta hasta que aparezca.
@@ -465,7 +465,7 @@ ok(
 );
 await desk.keyboard.press("Escape");
 await desk.setViewportSize(PHONE);
-await desk.goto(`${BASE}/inbox`, { waitUntil: "domcontentloaded" });
+await desk.goto(`${BASE}/bandeja`, { waitUntil: "domcontentloaded" });
 await desk.getByRole("button", { name: "Abrir el menú" }).waitFor({ timeout: 20000 });
 const franja = await desk.evaluate(() => {
   const aside = document.querySelector("aside");

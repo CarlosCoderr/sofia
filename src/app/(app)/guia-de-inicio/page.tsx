@@ -14,8 +14,8 @@ export const dynamic = "force-dynamic";
  */
 export default async function OnboardingPage() {
   const session = await getSessionOrNull();
-  if (!session) redirect("/login");
-  if (!canConfigure(session.role)) redirect("/inbox");
+  if (!session) redirect("/iniciar-sesion");
+  if (!canConfigure(session.role)) redirect("/bandeja");
   const [guide, [profile]] = await Promise.all([
     guideStatus(session.organizationId),
     getDb()

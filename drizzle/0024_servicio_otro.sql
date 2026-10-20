@@ -1,0 +1,2 @@
+ALTER TABLE "service" ADD COLUMN "is_other" boolean DEFAULT false NOT NULL;--> statement-breakpoint
+CREATE UNIQUE INDEX "service_org_other_uq" ON "service" USING btree ("organization_id") WHERE "service"."is_other";

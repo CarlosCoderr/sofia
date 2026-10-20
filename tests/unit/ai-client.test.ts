@@ -2,6 +2,7 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { AiClient } from "@/components/settings/ai-client";
+import { AI_PROVIDER_PRESETS } from "@/lib/ai/presets";
 import { AvisoIaBanner } from "@/components/avisos/aviso-ia";
 
 /**
@@ -20,7 +21,8 @@ describe("Ajustes → IA", () => {
     expect(html).toContain("Probar conexión");
     expect(html).toContain("Traer modelos");
     expect(html).toContain("OpenRouter");
-    expect(html).toContain("Otro compatible con OpenAI");
+    // La lista de proveedores se abre con un clic (lleva buscador): aquí se comprueba el catálogo.
+    expect(Object.values(AI_PROVIDER_PRESETS).map((p) => p.label)).toContain("Otro compatible con OpenAI");
     // El respaldo del entorno se explica sin mandar a editar el .env.
     expect(html).toContain("OPENROUTER_API_TOKEN");
     expect(html).not.toContain("reinic");
@@ -36,7 +38,7 @@ describe("banner del agente sin IA", () => {
     );
     expect(html).toContain("Tu agente está pausado.");
     expect(html).toContain("Revisar mi conexión");
-    expect(html).toContain('href="/settings/ai"');
+    expect(html).toContain('href="/ajustes/ia"');
     expect(renderToStaticMarkup(React.createElement(AvisoIaBanner, { aviso: null }))).toBe("");
   });
 });

@@ -3,8 +3,11 @@
 import { useEffect, useState } from "react";
 import { blockStartUtc } from "@/lib/time/calendar";
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { DialogCloseButton } from "@/components/ui/dialog-close";
+import { SearchSelect } from "@/components/ui/search-select";
 
 /**
  * 215 — Bloquear un horario: para compromisos que viven fuera del CRM. Ese
@@ -90,9 +93,10 @@ export function BlockDialog({
       <form
         onSubmit={submit}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-sm space-y-4 rounded-lg border bg-popover p-5 shadow-pop"
+        className="relative w-full max-w-sm space-y-4 rounded-lg border bg-popover p-5 shadow-pop"
       >
-        <div>
+        <DialogCloseButton onClick={onCancel} />
+        <div className="pr-8">
           <h3 id="bloquear-titulo" className="text-[16px] font-bold">
             Bloquear horario
           </h3>
@@ -104,7 +108,7 @@ export function BlockDialog({
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <Label htmlFor="bloqueo-dia">Día</Label>
-            <Input id="bloqueo-dia" type="date" required value={day} onChange={(e) => setDay(e.target.value)} />
+            <DatePicker id="bloqueo-dia" value={day} onChange={setDay} />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="bloqueo-hora">Hora</Label>
@@ -121,18 +125,13 @@ export function BlockDialog({
 
         <div className="space-y-1.5">
           <Label htmlFor="bloqueo-duracion">Duración</Label>
-          <select
+          <SearchSelect
             id="bloqueo-duracion"
-            value={minutes}
-            onChange={(e) => setMinutes(Number(e.target.value))}
-            className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm shadow-sm focus-visible:border-brand focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-brand-soft"
-          >
-            {DURATIONS.map((d) => (
-              <option key={d} value={d}>
-                {durationLabel(d)}
-              </option>
-            ))}
-          </select>
+            value={String(minutes)}
+            onChange={(v) => setMinutes(Number(v))}
+            options={DURATIONS.map((d) => ({ value: String(d), label: durationLabel(d) }))}
+            searchPlaceholder="Buscar duración…"
+          />
         </div>
 
         <div className="space-y-1.5">

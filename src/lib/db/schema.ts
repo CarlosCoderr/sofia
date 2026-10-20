@@ -5,6 +5,8 @@ import {
   integer,
   jsonb,
   pgTable,
+  primaryKey,
+  smallint,
   text,
   timestamp,
   uniqueIndex,
@@ -110,6 +112,346 @@ export const invitation = pgTable("invitation", {
     .references(() => user.id, { onDelete: "cascade" }),
 });
 
+
+/* ============================================================
+ * Barberías, salones y manicure (módulo SALON)
+ *
+ * Catálogo (servicios y combos), equipo (staff, comisiones, horarios) y caja
+ * (ventas). Dinero SIEMPRE en centavos enteros. Las tablas se crean igual en
+ * toda instancia —unas tablas vacías son inertes—; lo que enciende la UI y la
+ * API es la bandera `SALON` (src/server/business/flag.ts).
+ * ============================================================ */
+
+// Servicios individuales (Corte, Barba, Mascarilla, etc.)
+export const service = pgTable(
+  "service",
+  {
+    id: text("id").primaryKey(), // prefix: 'srv'
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    description: text("description"),
+    priceCents: integer("price_cents").notNull(), // en centavos (ej: 2500 = S/ 25.00)
+    durationMinutes: integer("duration_minutes").notNull().default(30), // relativo/estimado
+    photoUrl: text("photo_url"), // Sin uso (queda por compatibilidad): la imagen vive en `imageMediaId`
+    /** Imagen elegida de la biblioteca (Medios). Si el medio se borra, queda sin imagen. */
+    imageMediaId: text("image_media_id").references(() => mediaLibraryItem.id, {
+      onDelete: "set null",
+    }),
+    /** Porcentaje de comisión por defecto para este servicio (0-100) */
+    defaultCommissionPercentage: integer("default_commission_percentage").default(50),
+    active: boolean("active").notNull().default(true),
+    /**
+     * El servicio «Otro» de la organización: un cobro a criterio cuyo monto se
+     * escribe al vender (un tinte, un diseño). Existe uno por organización, lo
+     * crea la primera venta y NUNCA aparece en el catálogo.
+     */
+    isOther: boolean("is_other").notNull().default(false),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (t) => [
+    index("service_org_idx").on(t.organizationId, t.active),
+    uniqueIndex("service_org_other_uq").on(t.organizationId).where(sql`${t.isOther}`),
+    check("service_price_nonneg", sql`${t.priceCents} >= 0`),
+    check("service_duration_pos", sql`${t.durationMinutes} > 0`),
+    check(
+      "service_commission_pct",
+      sql`${t.defaultCommissionPercentage} is null or ${t.defaultCommissionPercentage} between 0 and 100`
+    ),
+  ]
+);
+
+// Combos/Ofertas para Publicidad Pagada
+export const combo = pgTable(
+  "combo",
+  {
+    id: text("id").primaryKey(), // prefix: 'cmb'
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    name: text("name").notNull(), // ej: "Combo Fresh"
+    description: text("description").notNull(), // "Incluye corte, mascarilla, masajes..."
+    priceCents: integer("price_cents").notNull(),
+    durationMinutes: integer("duration_minutes").notNull().default(60),
+    /**
+     * Palabra clave para enganchar con anuncios de Meta/TikTok (ej: "COMBO_FRESH").
+     * Se guarda normalizada (MAYÚSCULAS, sin espacios) y es única por negocio.
+     */
+    keywordTrigger: text("keyword_trigger"),
+    /** Imagen elegida de la biblioteca (Medios). Si el medio se borra, queda sin imagen. */
+    imageMediaId: text("image_media_id").references(() => mediaLibraryItem.id, {
+      onDelete: "set null",
+    }),
+    active: boolean("active").notNull().default(true),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    index("combo_org_idx").on(t.organizationId, t.active),
+    uniqueIndex("combo_org_keyword_uq")
+      .on(t.organizationId, t.keywordTrigger)
+      .where(sql`${t.keywordTrigger} is not null`),
+    check("combo_price_nonneg", sql`${t.priceCents} >= 0`),
+    check("combo_duration_pos", sql`${t.durationMinutes} > 0`),
+  ]
+);
+
+// Integrantes del equipo (Barberos, Esteticistas, Manicuristas)
+export const staff = pgTable(
+  "staff",
+  {
+    id: text("id").primaryKey(), // prefix: 'stf'
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    phone: text("phone"),
+    active: boolean("active").notNull().default(true),
+    /** Porcentaje global de comisión si aplica para todo (ej: 50%) */
+    globalCommissionPercentage: integer("global_commission_percentage"),
+    /** Foto elegida de la biblioteca (Medios). Si el medio se borra, queda sin foto. */
+    imageMediaId: text("image_media_id").references(() => mediaLibraryItem.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    index("staff_org_idx").on(t.organizationId, t.active),
+    check(
+      "staff_commission_pct",
+      sql`${t.globalCommissionPercentage} is null or ${t.globalCommissionPercentage} between 0 and 100`
+    ),
+  ]
+);
+
+// Comisiones personalizadas por barbero/servicio
+export const staffServiceCommission = pgTable(
+  "staff_service_commission",
+  {
+    id: text("id").primaryKey(), // prefix: 'ssc'
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    staffId: text("staff_id")
+      .notNull()
+      .references(() => staff.id, { onDelete: "cascade" }),
+    serviceId: text("service_id")
+      .notNull()
+      .references(() => service.id, { onDelete: "cascade" }),
+    percentage: integer("percentage").notNull(), // Porcentaje específico para este barbero en este servicio
+  },
+  (t) => [
+    uniqueIndex("staff_service_commission_uq").on(t.staffId, t.serviceId),
+    index("staff_service_commission_org_idx").on(t.organizationId),
+    check("staff_service_commission_pct", sql`${t.percentage} between 0 and 100`),
+  ]
+);
+
+/**
+ * Qué profesionales dan un servicio. SIN filas = lo da TODO el equipo (el valor
+ * por defecto); con filas, solo los listados. «Todos» no se guarda como una fila
+ * por profesional a propósito: un profesional nuevo debe poder dar lo que dan
+ * todos sin que alguien tenga que acordarse de marcarlo.
+ */
+export const serviceStaff = pgTable(
+  "service_staff",
+  {
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    serviceId: text("service_id")
+      .notNull()
+      .references(() => service.id, { onDelete: "cascade" }),
+    staffId: text("staff_id")
+      .notNull()
+      .references(() => staff.id, { onDelete: "cascade" }),
+  },
+  (t) => [
+    primaryKey({ columns: [t.serviceId, t.staffId] }),
+    index("service_staff_org_idx").on(t.organizationId),
+    index("service_staff_staff_idx").on(t.staffId),
+  ]
+);
+
+/** Igual que `service_staff`, para las ofertas: sin filas = todo el equipo. */
+export const comboStaff = pgTable(
+  "combo_staff",
+  {
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    comboId: text("combo_id")
+      .notNull()
+      .references(() => combo.id, { onDelete: "cascade" }),
+    staffId: text("staff_id")
+      .notNull()
+      .references(() => staff.id, { onDelete: "cascade" }),
+  },
+  (t) => [
+    primaryKey({ columns: [t.comboId, t.staffId] }),
+    index("combo_staff_org_idx").on(t.organizationId),
+    index("combo_staff_staff_idx").on(t.staffId),
+  ]
+);
+
+// Horario semanal / días libres por barbero. Sin fila para un día = sigue el
+// horario del negocio (Ajustes → Agenda).
+export const staffSchedule = pgTable(
+  "staff_schedule",
+  {
+    id: text("id").primaryKey(), // prefix: 'sch'
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    staffId: text("staff_id")
+      .notNull()
+      .references(() => staff.id, { onDelete: "cascade" }),
+    dayOfWeek: integer("day_of_week").notNull(), // 0=Domingo, 1=Lunes, ...
+    startTime: text("start_time").notNull(), // "10:00"
+    endTime: text("end_time").notNull(), // "20:00"
+    isOff: boolean("is_off").notNull().default(false), // Días libres
+  },
+  (t) => [
+    uniqueIndex("staff_schedule_staff_day_uq").on(t.staffId, t.dayOfWeek),
+    index("staff_schedule_org_idx").on(t.organizationId),
+    check("staff_schedule_day", sql`${t.dayOfWeek} between 0 and 6`),
+  ]
+);
+
+// Ventas de caja. Es un registro FINANCIERO: sobrevive a que se borre el
+// contacto (el nombre queda en `customer_name`) y no se borra con el
+// servicio/combo/barbero (esos se desactivan).
+export const serviceSale = pgTable(
+  "service_sale",
+  {
+    id: text("id").primaryKey(), // prefix: 'sls'
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    bookingId: text("booking_id").references(() => booking.id, { onDelete: "set null" }), // Si nació de una cita
+    contactId: text("contact_id").references(() => contact.id, { onDelete: "set null" }),
+    /** Nombre del cliente al cobrar: el historial no cambia si se renombra o borra el contacto. */
+    customerName: text("customer_name").notNull(),
+    staffId: text("staff_id")
+      .notNull()
+      .references(() => staff.id),
+    serviceId: text("service_id").references(() => service.id),
+    comboId: text("combo_id").references(() => combo.id),
+    amountCents: integer("amount_cents").notNull(), // Precio real cobrado
+    /** Cálculo automático del pago al barbero en el momento de la atención */
+    staffCommissionCents: integer("staff_commission_cents").notNull(),
+    businessNetCents: integer("business_net_cents").notNull(), // Lo que le queda a la barbería
+    paymentMethod: text("payment_method", {
+      enum: ["efectivo", "yape_plin", "tarjeta", "otro"],
+    }).notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    index("service_sale_org_when_idx").on(t.organizationId, t.createdAt),
+    // Una cita se cobra una sola vez: la base lo garantiza, no el botón.
+    uniqueIndex("service_sale_booking_uq")
+      .on(t.bookingId)
+      .where(sql`${t.bookingId} is not null`),
+    index("service_sale_org_staff_idx").on(t.organizationId, t.staffId, t.createdAt),
+    check("service_sale_amount_nonneg", sql`${t.amountCents} >= 0`),
+    check(
+      "service_sale_split",
+      sql`${t.staffCommissionCents} + ${t.businessNetCents} = ${t.amountCents}`
+    ),
+    // O es un servicio o es un combo; nunca ninguno ni los dos.
+    check("service_sale_one_item", sql`num_nonnulls(${t.serviceId}, ${t.comboId}) = 1`),
+  ]
+);
+
+/**
+ * Los ítems de una venta (el «carrito»): una venta puede llevar varios servicios
+ * u ofertas. `amount_cents` es lo que le toca a cada ítem del total cobrado (si
+ * se editó el monto, se reparte proporcional al precio de lista), así la suma de
+ * los ítems siempre es el monto de la venta y el desglose por servicio es exacto.
+ * La fila de `service_sale` conserva como principal el primer ítem.
+ */
+export const serviceSaleItem = pgTable(
+  "service_sale_item",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    saleId: text("sale_id")
+      .notNull()
+      .references(() => serviceSale.id, { onDelete: "cascade" }),
+    serviceId: text("service_id").references(() => service.id),
+    comboId: text("combo_id").references(() => combo.id),
+    amountCents: integer("amount_cents").notNull(),
+    position: integer("position").notNull().default(0),
+    /** Solo en «Otro»: qué fue en concreto (p. ej. «Peinado para evento»). */
+    note: text("note"),
+  },
+  (t) => [
+    index("service_sale_item_org_idx").on(t.organizationId),
+    index("service_sale_item_sale_idx").on(t.saleId),
+    check("service_sale_item_amount_nonneg", sql`${t.amountCents} >= 0`),
+    check("service_sale_item_one", sql`num_nonnulls(${t.serviceId}, ${t.comboId}) = 1`),
+  ]
+);
+
+/**
+ * Auditoría de la fecha de una venta. Cada corrección deja una fila: cuándo se
+ * hizo, la fecha que tenía antes, la nueva y quién la hizo. Solo se inserta (la
+ * app no tiene ninguna ruta que la edite o la borre) y NO lleva clave foránea a
+ * la venta a propósito: si la venta se anula, el rastro del cambio se conserva.
+ */
+export const serviceSaleDateChange = pgTable(
+  "service_sale_date_change",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    saleId: text("sale_id").notNull(),
+    /** Instante de la venta antes y después del cambio (UTC). */
+    previousAt: timestamp("previous_at").notNull(),
+    newAt: timestamp("new_at").notNull(),
+    changedAt: timestamp("changed_at").notNull().defaultNow(),
+    changedByUserId: text("changed_by_user_id").notNull(),
+    /** Nombre y correo de quien lo hizo, tal como eran en ese momento. */
+    changedByLabel: text("changed_by_label").notNull(),
+  },
+  (t) => [
+    index("service_sale_date_change_org_idx").on(t.organizationId, t.changedAt),
+    index("service_sale_date_change_sale_idx").on(t.saleId),
+  ]
+);
+
+/**
+ * Auditoría de la edición de una venta (ítems, profesional y monto). Cada
+ * corrección deja una fila con la venta TAL COMO ERA y TAL COMO QUEDÓ, quién la
+ * hizo y cuándo. Solo se inserta y, como la de fechas, NO lleva clave foránea a
+ * la venta: si se anula, el rastro se conserva.
+ */
+export const serviceSaleEdit = pgTable(
+  "service_sale_edit",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    saleId: text("sale_id").notNull(),
+    changedAt: timestamp("changed_at").notNull().defaultNow(),
+    changedByUserId: text("changed_by_user_id").notNull(),
+    /** Nombre y correo de quien lo hizo, tal como eran en ese momento. */
+    changedByLabel: text("changed_by_label").notNull(),
+    /** Foto de la venta antes y después: profesional, monto, comisión e ítems. */
+    before: jsonb("before").notNull(),
+    after: jsonb("after").notNull(),
+  },
+  (t) => [
+    index("service_sale_edit_org_idx").on(t.organizationId, t.changedAt),
+    index("service_sale_edit_sale_idx").on(t.saleId),
+  ]
+);
+
 /* ============================================================
  * Dominio (toda tabla lleva organization_id NOT NULL + índice org-first)
  * ============================================================ */
@@ -188,6 +530,15 @@ export const contact = pgTable(
      * (`getOrCreateConversation`); después manda el interruptor de la Bandeja.
      */
     aiPaused: boolean("ai_paused").notNull().default(false),
+    /** Cumpleaños (solo día y mes; el año no se pide). Ambos o ninguno. */
+    birthdayDay: smallint("birthday_day"),
+    birthdayMonth: smallint("birthday_month"),
+    /**
+     * Módulo SALON: es cliente del salón. Se enciende con la primera venta en
+     * Caja o al darlo de alta en Clientes; «eliminar cliente» solo lo apaga (el
+     * contacto y sus ventas quedan).
+     */
+    salonClient: boolean("salon_client").notNull().default(false),
     archivedAt: timestamp("archived_at"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -496,6 +847,37 @@ export const mediaAsset = pgTable(
   (t) => [
     index("media_asset_org_idx").on(t.organizationId, t.createdAt),
     index("media_asset_wa_media_idx").on(t.waMediaId),
+  ]
+);
+
+/**
+ * Módulo Medios — la biblioteca de imágenes y videos del negocio (como la de
+ * WordPress): se suben desde el dispositivo o se traen de un enlace, y se
+ * reutilizan por su URL. Aparte de `media_asset`, que es el adjunto de una
+ * conversación: aquí no hay mensaje, hay un archivo que alguien quiso guardar.
+ * El binario vive en `MEDIA_DIR/<org>/medios/<id>`.
+ */
+export const mediaLibraryItem = pgTable(
+  "media_library_item",
+  {
+    id: text("id").primaryKey(), // prefix: 'med'
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    kind: text("kind", { enum: ["image", "video"] }).notNull(),
+    mimeType: text("mime_type").notNull(),
+    sizeBytes: integer("size_bytes").notNull(),
+    source: text("source", { enum: ["upload", "url"] }).notNull(),
+    /** El enlace del que se trajo, cuando `source = 'url'`. */
+    sourceUrl: text("source_url"),
+    /** Quién lo subió; se conserva el nombre aunque el usuario se borre. */
+    createdBy: text("created_by"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    index("media_library_item_org_idx").on(t.organizationId, t.createdAt),
+    check("media_library_item_size_pos", sql`${t.sizeBytes} > 0`),
   ]
 );
 
@@ -851,11 +1233,18 @@ export const booking = pgTable(
     /** Conversación del Laboratorio: jamás llama a un conector real. */
     isTest: boolean("is_test").notNull().default(false),
     notes: text("notes"),
+    /**
+     * Silla / profesional que atiende (módulo SALON). Null = sin asignar: es
+     * lo que crean el agente y el flujo de siempre. Al borrar al profesional,
+     * la cita queda sin asignar en vez de desaparecer.
+     */
+    staffId: text("staff_id").references(() => staff.id, { onDelete: "set null" }),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
   (t) => [
     index("booking_org_when_idx").on(t.organizationId, t.scheduledAt),
+    index("booking_org_staff_idx").on(t.organizationId, t.staffId, t.scheduledAt),
     index("booking_org_status_idx").on(t.organizationId, t.status),
     /**
      * Anti doble-booking ATÓMICO. La re-validación al confirmar deja una
@@ -866,7 +1255,11 @@ export const booking = pgTable(
      * agenda real.
      */
     uniqueIndex("booking_org_active_slot_uq")
-      .on(t.organizationId, t.scheduledAt)
+      // Multicupo (módulo SALON): único por instante Y silla. `coalesce` hace
+      // que las citas sin asignar (staff_id null) sigan chocando entre sí como
+      // antes (un NULL normal nunca choca): quien no asigna sillas no nota el
+      // cambio.
+      .on(t.organizationId, t.scheduledAt, sql`coalesce(${t.staffId}, '')`)
       .where(
         sql`${t.status} in ('agendada','realizada') and ${t.isTest} = false`
       ),

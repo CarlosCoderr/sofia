@@ -65,9 +65,9 @@ describe("una instancia recién instalada", () => {
   it("cada paso lleva a su pantalla", async () => {
     const status = await onboardingStatus("org_1", db);
     expect(status.steps.map((s) => s.href)).toEqual([
-      "/agent",
-      "/settings/ai",
-      "/settings/whatsapp",
+      "/agente",
+      "/ajustes/ia",
+      "/ajustes/whatsapp",
       null,
     ]);
   });
@@ -151,7 +151,7 @@ describe("paso 4: la agenda, solo con AGENDA=on", () => {
   it("sin horarios guardados está pendiente y lleva a Ajustes → Agenda", async () => {
     expect(await paso("calendar")).toMatchObject({
       status: "pending",
-      href: "/settings/calendar",
+      href: "/ajustes/calendario",
       problem: null,
     });
   });

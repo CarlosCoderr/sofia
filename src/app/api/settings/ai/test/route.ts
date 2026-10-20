@@ -1,4 +1,5 @@
 import { apiError, parseBody, withAuth } from "@/lib/api";
+import { canConfigure } from "@/lib/auth/roles";
 import { probeProvider } from "@/lib/ai/probe";
 import { apiRoot } from "@/lib/ai/presets";
 import { getAiCredentialPublic, marcarActiva } from "@/server/ai/credentials";
@@ -18,6 +19,9 @@ export const dynamic = "force-dynamic";
  * de «recargué saldo» sin pegar la misma llave otra vez.
  */
 export const POST = withAuth(async (session, req: Request) => {
+  if (!canConfigure(session.role)) {
+    return apiError(403, "forbidden", "Solo el dueño o un administrador puede hacer esto");
+  }
   const body = await parseBody(req, aiProbeSchema);
   if (!body.ok) return body.response;
 

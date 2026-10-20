@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { CHANNEL_CAPABILITIES } from "@/server/channels/capabilities";
 import { channelList, emptyInboxDescription } from "@/components/inbox/helpers";
-import { navKicker } from "@/lib/channels";
 import { initials } from "@/lib/utils";
 
 /** 028 — Pulido visual de la 1.6. */
@@ -41,13 +40,6 @@ describe("la bandeja vacía nombra los canales encendidos (D2)", () => {
     expect(emptyInboxDescription(["WhatsApp", "Instagram", "Messenger", "TikTok"])).toBe(
       "Cuando alguien te escriba por WhatsApp, Instagram, Messenger o TikTok, su conversación aparecerá aquí en tiempo real."
     );
-  });
-});
-
-describe("la etiqueta bajo el logo (D6)", () => {
-  it("con solo WhatsApp, la de siempre; con más canales, Multicanal", () => {
-    expect(navKicker(["whatsapp"])).toBe("CRM · WhatsApp");
-    expect(navKicker(["whatsapp", "instagram"])).toBe("CRM · Multicanal");
   });
 });
 

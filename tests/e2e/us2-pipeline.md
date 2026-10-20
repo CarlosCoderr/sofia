@@ -6,7 +6,7 @@
 
 ## Auto-registro (FR-010)
 
-1. Abrir `/contacts`.
+1. Abrir `/contactos`.
    ✅ Los remitentes de US1 ("Cliente E2E", "Cliente Frio") existen como
    contactos con su nombre de perfil y teléfono.
 2. Abrir `/pipeline`.
@@ -19,7 +19,7 @@
 4. Recargar la página.
    ✅ La tarjeta sigue en "En conversación" (persistencia).
 5. La tarjeta muestra contacto + última actividad + enlace que abre su
-   conversación en la bandeja (`/inbox?contact=...`).
+   conversación en la bandeja (`/bandeja?contact=...`).
 
 ## Gestión de etapas (FR-011)
 

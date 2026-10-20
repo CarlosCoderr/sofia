@@ -124,7 +124,7 @@ export function InboxClient({
     }
   }, []);
 
-  // Enlace directo desde Contactos/Pipeline: /inbox?contact=<id>
+  // Enlace directo desde Contactos/Pipeline: /bandeja?contact=<id>
   const searchParams = useSearchParams();
   const contactParam = searchParams.get("contact");
   useEffect(() => {

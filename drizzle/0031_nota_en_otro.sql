@@ -1,0 +1,1 @@
+ALTER TABLE "service_sale_item" ADD COLUMN "note" text;

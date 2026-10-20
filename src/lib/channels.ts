@@ -33,14 +33,6 @@ export const CHANNEL_LABEL: Record<Channel, string> = {
   tiktok: "TikTok",
 };
 
-/**
- * 028 — La etiqueta bajo el logo. Con un solo canal, el de siempre; con más,
- * decir «WhatsApp» le contaría al operador la mitad de lo que hace su CRM.
- */
-export function navKicker(channels: readonly Channel[]): string {
-  return channels.length > 1 ? "CRM · Multicanal" : "CRM · WhatsApp";
-}
-
 /** 028 — Lo mismo para el título de la pestaña y la pantalla de entrada. */
 export function productName(channels: readonly Channel[]): string {
   return channels.length > 1 ? "CRM multicanal" : "CRM de WhatsApp";

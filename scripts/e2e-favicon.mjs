@@ -134,13 +134,13 @@ console.log("\n== El logo subido se ve también donde se ve la marca ==");
 // Antes solo cambiaba la pestaña: la barra lateral y el login seguían con la
 // inicial, y quien subía su logo no lo veía por ningún lado.
 const v1 = `u${subidaJson?.favicon?.version}`;
-let pagina = await paginaDe("/inbox");
+let pagina = await paginaDe("/bandeja");
 ok(
   "la barra lateral lo dibuja, con la MISMA URL versionada que la pestaña",
   versionEnMosaico(pagina) === v1,
   `mosaico con ${versionEnMosaico(pagina) ?? "la inicial"}, esperado ${v1}`
 );
-pagina = await paginaDe("/login", { sesion: false });
+pagina = await paginaDe("/iniciar-sesion", { sesion: false });
 ok(
   "el login también, sin sesión",
   versionEnMosaico(pagina) === v1,
@@ -198,7 +198,7 @@ ok(
   res.headers.get("content-type")?.includes("svg") && cuerpo.includes(">A<"),
   cuerpo.slice(0, 60)
 );
-pagina = await paginaDe("/inbox");
+pagina = await paginaDe("/bandeja");
 ok(
   "y la barra lateral vuelve a la inicial, sin imagen rota",
   versionEnMosaico(pagina) === null &&
@@ -229,7 +229,7 @@ ok(
   marca?.branding?.favicon?.version === otraJson.favicon.version,
   JSON.stringify(marca?.branding?.favicon)
 );
-pagina = await paginaDe("/inbox");
+pagina = await paginaDe("/bandeja");
 ok(
   "y la barra lateral pide el logo nuevo, no el que el navegador ya guardó",
   versionEnMosaico(pagina) === `u${otraJson?.favicon?.version}`,

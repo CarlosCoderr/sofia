@@ -15,8 +15,8 @@ le encierre: la guía captura solo la raíz; el menú lleva a cualquier pantalla
 
 1. Registrarse (crea la organización) o iniciar sesión como propietario.
    ✅ `router.push("/")`: la raíz decide. `GET /` con la sesión → **307** a
-   `/onboarding` mientras falte un paso o el agente siga apagado.
-2. Abrir `/onboarding`.
+   `/guia-de-inicio` mientras falte un paso o el agente siga apagado.
+2. Abrir `/guia-de-inicio`.
    ✅ Cabecera «Deja listo tu CRM en N pasos» (N = 3; 4 con `AGENDA=on`),
    barra de avance «0 de N listos», la lista numerada con el paso 1 resaltado
    (`ring`) y, al final, la tarjeta «Al final: encender a tu agente» explicando
@@ -55,17 +55,17 @@ le encierre: la guía captura solo la raíz; el menú lleva a cualquier pantalla
 
 8. Con todos los pasos listos y el agente apagado.
    ✅ `guide.complete:true`, `enabled:false`; `GET /` sigue mandando a
-   `/onboarding`; la tarjeta final pasa a «¡Todo listo! Enciende a <nombre>»
+   `/guia-de-inicio`; la tarjeta final pasa a «¡Todo listo! Enciende a <nombre>»
    con el botón **Encender**.
 9. Pulsar **Encender** (`PUT /api/agent/profile {enabled:true}`).
    ✅ `enabled:true`; la tarjeta dice «<nombre> ya está contestando» con
-   «Ir a la Bandeja»; `GET /` → **307** a `/inbox`: la guía dejó de ser la
+   «Ir a la Bandeja»; `GET /` → **307** a `/bandeja`: la guía dejó de ser la
    primera pantalla (sigue en el menú para revisarla).
 
 ## Camino infeliz y guardas
 
-10. Un miembro del equipo (`role: member`) abre `/onboarding` → redirige a
-    `/inbox`; su `GET /` → `/inbox` siempre; en su menú no hay «Guía de
+10. Un miembro del equipo (`role: member`) abre `/guia-de-inicio` → redirige a
+    `/bandeja`; su `GET /` → `/bandeja` siempre; en su menú no hay «Guía de
     inicio».
 11. Un negocio demo recién sembrado («Cargar datos de demostración»): el seed
     deja configurado el agente (paso 1 listo) pero no puede vincular una llave

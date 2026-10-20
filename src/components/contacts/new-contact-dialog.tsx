@@ -5,6 +5,10 @@ import type { SourceValue, StageDto } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { DialogCloseButton } from "@/components/ui/dialog-close";
+import { SearchSelect } from "@/components/ui/search-select";
+import { PhoneInput } from "@/components/negocio/fields";
+import { isPersonName, sanitizePersonName, STAFF_PHONE_DIGITS } from "@/lib/salon/staff-fields";
 
 const SOURCES: { value: SourceValue; label: string }[] = [
   { value: "referido", label: "Referido" },
@@ -16,8 +20,12 @@ const SOURCES: { value: SourceValue; label: string }[] = [
 
 /**
  * Alta manual de un prospecto que no llegó por WhatsApp.
- * El teléfono es obligatorio porque ES la identidad en WhatsApp: sin él, el
+ * El celular es obligatorio porque ES la identidad en WhatsApp: sin él, el
  * contacto no podría recibir ni mandar nada, y sería una ficha muerta.
+ *
+ * Validación en vivo: el nombre solo admite letras y espacios (lo demás no se
+ * puede teclear ni pegar) y el celular son exactamente 9 dígitos con el +51 de
+ * Perú fijo, que se escribe «921 926 452» y se envía como `51921926452`.
  */
 export function NewContactDialog({
   onClose,
@@ -30,7 +38,9 @@ export function NewContactDialog({
   onOpenExisting: (contactId: string) => void;
 }) {
   const [name, setName] = useState("");
+  // Solo los 9 dígitos; el +51 va fijo en pantalla.
   const [phone, setPhone] = useState("");
+  const [touched, setTouched] = useState({ name: false, phone: false });
   const [source, setSource] = useState<SourceValue>("referido");
   const [notes, setNotes] = useState("");
   const [stages, setStages] = useState<StageDto[]>([]);
@@ -53,6 +63,11 @@ export function NewContactDialog({
   }, []);
 
   async function guardar() {
+    // Con algo mal, el botón no está apagado: al pulsarlo se muestran los avisos.
+    if (!listo) {
+      setTouched({ name: true, phone: true });
+      return;
+    }
     setSaving(true);
     setError(null);
     setDuplicado(null);
@@ -61,7 +76,7 @@ export function NewContactDialog({
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         name: name.trim(),
-        phone: phone.trim(),
+        phone: `51${phone}`,
         source,
         notes: notes.trim() || undefined,
         stageId: stageId || undefined,
@@ -89,9 +104,15 @@ export function NewContactDialog({
     onCreated();
   }
 
-  // 11 dígitos = código de país + número. Ver la nota del endpoint sobre por
-  // qué el código de país no puede faltar ni asumirse.
-  const listo = name.trim().length > 0 && phone.replace(/\D/g, "").length >= 11;
+  const nameError =
+    name.trim().length < 2 || !isPersonName(name.trim())
+      ? "Escribe el nombre (mínimo 2 letras, solo letras y espacios)."
+      : null;
+  const phoneError =
+    phone.length !== STAFF_PHONE_DIGITS
+      ? `El celular debe tener exactamente ${STAFF_PHONE_DIGITS} dígitos.`
+      : null;
+  const listo = !nameError && !phoneError;
 
   return (
     <div
@@ -101,10 +122,11 @@ export function NewContactDialog({
       <div
         role="dialog"
         aria-label="Nuevo contacto"
-        className="w-full max-w-md rounded-lg border bg-popover p-5 shadow-xl"
+        className="relative w-full max-w-md rounded-lg border bg-popover p-5 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className="mb-1 font-semibold">Nuevo contacto</h3>
+        <DialogCloseButton onClick={onClose} />
+        <h3 className="mb-1 pr-8 font-semibold">Nuevo contacto</h3>
         <p className="mb-4 text-xs text-text-3">
           Para prospectos que no llegaron por WhatsApp: referidos, gente que te
           escribió por otra red, conocidos.
@@ -118,27 +140,48 @@ export function NewContactDialog({
             <Input
               id="nc-name"
               value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Ferretería La Central"
+              maxLength={80}
+              autoComplete="off"
+              // Números y signos no se pueden teclear ni pegar.
+              onChange={(e) => {
+                setName(sanitizePersonName(e.target.value));
+                setTouched((t) => ({ ...t, name: false }));
+              }}
+              onBlur={() => setTouched((t) => ({ ...t, name: name.trim().length > 0 }))}
+              aria-invalid={(touched.name && !!nameError) || undefined}
+              placeholder="Ej. Carlos Mendoza"
             />
+            {touched.name && nameError ? (
+              <p role="alert" className="text-[11px] text-danger-text">
+                {nameError}
+              </p>
+            ) : (
+              <p className="text-[11px] text-text-3">Solo letras y espacios.</p>
+            )}
           </div>
 
           <div className="space-y-1.5">
             <label className="text-sm font-medium" htmlFor="nc-phone">
-              Teléfono con código de país
+              Celular
             </label>
-            <Input
+            <PhoneInput
               id="nc-phone"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="52 555 000 1234"
+              digits={phone}
+              onChange={(d) => {
+                setPhone(d);
+                setTouched((t) => ({ ...t, phone: false }));
+              }}
+              // El error llega al salir del campo con el celular a medias, no al teclear.
+              onBlur={() => setTouched((t) => ({ ...t, phone: phone.length > 0 }))}
+              invalid={touched.phone && !!phoneError}
             />
-            <p className="text-[11px] text-text-3">
-              Escríbelo con espacios si quieres, pero{" "}
-              <strong>incluye el código de país</strong> (52 para México). Sin
-              él, WhatsApp no lo reconoce como la misma persona que te escriba
-              después.
-            </p>
+            {touched.phone && phoneError ? (
+              <p role="alert" className="text-[11px] text-danger-text">
+                {phoneError}
+              </p>
+            ) : (
+              <p className="text-[11px] text-text-3">9 dígitos, solo números.</p>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -146,35 +189,27 @@ export function NewContactDialog({
               <label className="text-sm font-medium" htmlFor="nc-source">
                 ¿De dónde salió?
               </label>
-              <select
+              <SearchSelect
                 id="nc-source"
                 value={source}
-                onChange={(e) => setSource(e.target.value as SourceValue)}
-                className="h-9 w-full rounded-md border border-input bg-card px-2 text-sm"
-              >
-                {SOURCES.map((s) => (
-                  <option key={s.value} value={s.value}>
-                    {s.label}
-                  </option>
-                ))}
-              </select>
+                onChange={(v) => setSource(v as SourceValue)}
+                options={SOURCES.map((s) => ({ value: s.value, label: s.label }))}
+                searchPlaceholder="Buscar origen…"
+                triggerClassName="bg-card px-2"
+              />
             </div>
             <div className="space-y-1.5">
               <label className="text-sm font-medium" htmlFor="nc-stage">
                 Etapa inicial
               </label>
-              <select
+              <SearchSelect
                 id="nc-stage"
                 value={stageId}
-                onChange={(e) => setStageId(e.target.value)}
-                className="h-9 w-full rounded-md border border-input bg-card px-2 text-sm"
-              >
-                {stages.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
+                onChange={setStageId}
+                options={stages.map((s) => ({ value: s.id, label: s.name }))}
+                searchPlaceholder="Buscar etapa…"
+                triggerClassName="bg-card px-2"
+              />
             </div>
           </div>
 
@@ -187,7 +222,7 @@ export function NewContactDialog({
               rows={3}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Me lo pasó Juan; tiene taller de motos…"
+              placeholder="Prefiere corte degradado bajo, viene cada 15 días"
             />
           </div>
         </div>
@@ -221,7 +256,7 @@ export function NewContactDialog({
             Cancelar
           </Button>
           <Button
-            disabled={!listo || saving || stages.length === 0}
+            disabled={saving || stages.length === 0}
             onClick={() => void guardar()}
           >
             {saving ? "Guardando…" : "Crear contacto"}

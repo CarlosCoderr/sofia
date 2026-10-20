@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { count, eq } from "drizzle-orm";
 import { z } from "zod";
 import { apiError, parseBody, withAuth } from "@/lib/api";
 import { getDb, schema } from "@/lib/db";
@@ -24,9 +24,20 @@ export const GET = withAuth(async (session, _req: Request, ctx: Params) => {
   const { id } = await ctx.params;
   const contact = await getContactById(session.organizationId, id);
   if (!contact) return apiError(404, "not_found", "Contacto no encontrado");
-  const [stageRow, anuncio] = await Promise.all([
+  const [stageRow, anuncio, [sales]] = await Promise.all([
     getContactStage(session.organizationId, id),
     anuncioDelContacto(session.organizationId, id),
+    // Cuántas ventas tiene en Caja: la Bandeja lo usa para advertir antes de borrarlo.
+    getDb()
+      .select({ n: count() })
+      .from(schema.serviceSale)
+      .where(
+        scoped(
+          schema.serviceSale.organizationId,
+          session.organizationId,
+          eq(schema.serviceSale.contactId, id)
+        )
+      ),
   ]);
   // 018 — Sin imagen todavía: se reintenta en segundo plano y llega por SSE.
   if (anuncio && !anuncio.imageAssetId) {
@@ -45,6 +56,7 @@ export const GET = withAuth(async (session, _req: Request, ctx: Params) => {
         }
       : null,
     lead: stageRow ? { id: stageRow.lead.id } : null,
+    salesCount: sales?.n ?? 0,
   });
 });
 

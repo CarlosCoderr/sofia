@@ -12,6 +12,7 @@ import { ContactAvatar } from "@/components/avatar";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { emptyInboxDescription, formatTime, previewText } from "./helpers";
+import { SearchSelect } from "@/components/ui/search-select";
 
 /* Puntos de etapa: los tokens del tema, no hex copiados del tema claro —
    así siguen al acento white-label y se recalculan en oscuro. */
@@ -254,25 +255,25 @@ export function ConversationList({
         ))}
 
         {stages.length > 0 && (
-          <select
+          <SearchSelect
             value={stage}
-            onChange={(e) => setStage(e.target.value)}
-            aria-label="Filtrar por etapa del embudo"
-            className={cn(
-              "ml-auto min-w-0 max-w-[42%] truncate rounded-full border px-2 py-[5px] text-[12.5px] font-semibold transition-colors",
+            onChange={setStage}
+            ariaLabel="Filtrar por etapa del embudo"
+            options={[
+              { value: "all", label: "Toda etapa" },
+              ...stages.map((s) => ({ value: s, label: s })),
+            ]}
+            searchPlaceholder="Buscar etapa…"
+            minListWidth={220}
+            className="ml-auto min-w-0 max-w-[42%]"
+            triggerClassName={cn(
+              "h-auto w-full rounded-full px-2 py-[5px] text-[12.5px] font-semibold shadow-none transition-colors",
               FOCO_SEPARADO,
               stage === "all"
                 ? "border-border-strong bg-chip text-text-2 hover:border-text-3"
                 : "border-brand bg-brand text-brand-fg"
             )}
-          >
-            <option value="all">Toda etapa</option>
-            {stages.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
+          />
         )}
       </div>
 

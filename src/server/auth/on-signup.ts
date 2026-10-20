@@ -1,4 +1,5 @@
 import { count, eq, sql } from "drizzle-orm";
+import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import { getDb, schema } from "@/lib/db";
 import { newId } from "@/lib/db/ids";
 
@@ -19,8 +20,12 @@ const SEED_STAGES: { name: string; kind: "open" | "won" | "lost" }[] = [
  * el propietario y reciben su membresía explícita). Un advisory lock evita que
  * dos registros simultáneos en instancia vacía creen dos organizaciones.
  */
-export async function onUserCreated(userId: string, userName: string) {
-  const db = getDb();
+export async function onUserCreated(
+  userId: string,
+  userName: string,
+  /** Conexión propia (el script `crear-usuario` abre la suya); por defecto la de la app. */
+  db: PostgresJsDatabase<typeof schema> = getDb()
+) {
   await db.transaction(async (tx) => {
     // Lock transaccional de "primer arranque" (clave arbitraria fija):
     // dos registros simultáneos en instancia vacía → solo uno crea la org.

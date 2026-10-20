@@ -19,7 +19,7 @@ Con `AGENDA` ausente:
    responden **404**.
 2. `GET /api/bot/availability` responde **404** — antes incluso de mirar la
    llave: el endpoint no existe aquí.
-3. La pantalla `/bookings` responde 404 y la navegación no la menciona.
+3. La pantalla `/citas` responde 404 y la navegación no la menciona.
 
 4. `GET /api/bot/context` **no** trae `booking` — ni vacío: un bloque vacío en
    una instancia sin agenda se leería como «este lead no tiene cita».

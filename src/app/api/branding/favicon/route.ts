@@ -1,7 +1,8 @@
 import { readMediaFile } from "@/server/whatsapp/media";
 import { getBrandingContext } from "@/server/branding";
 import { DEFAULT_BRANDING } from "@/lib/branding";
-import { FAVICON_ASSET, generatedFaviconSvg } from "@/lib/favicon";
+import { FAVICON_ASSET } from "@/lib/favicon";
+import { DEFAULT_FAVICON_SRC } from "@/lib/favicon-default";
 
 export const dynamic = "force-dynamic";
 
@@ -51,7 +52,9 @@ export async function GET(req: Request) {
     }
   }
 
-  return new Response(generatedFaviconSvg(branding), {
-    headers: cabeceras("image/svg+xml", cacheable),
+  // Sin logo propio (o si el archivo se perdió): el icono de Agencia Luvo.
+  return new Response(null, {
+    status: 307,
+    headers: { location: DEFAULT_FAVICON_SRC, "cache-control": "public, max-age=60" },
   });
 }

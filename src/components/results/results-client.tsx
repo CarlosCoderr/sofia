@@ -64,13 +64,11 @@ export function ResultsClient({
   currency,
   agenda,
   today,
-  timezone,
 }: {
   currency: string;
   agenda: boolean;
   /** Hoy en la zona del negocio (`YYYY-MM-DD`), resuelto en el servidor. */
   today: string;
-  timezone: string;
 }) {
   const [range, setRange] = useState<Range>(() => defaultRange(today));
   const [sales, setSales] = useState<Block<SalesBlockDto>>(inicial);
@@ -103,7 +101,7 @@ export function ResultsClient({
             Ventas, el trabajo del agente, de dónde llegan y qué se está cayendo.
           </p>
         </div>
-        <RangePicker value={range} onChange={setRange} today={today} timezone={timezone} />
+        <RangePicker value={range} onChange={setRange} today={today} />
       </header>
 
       <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-3 sm:p-6">

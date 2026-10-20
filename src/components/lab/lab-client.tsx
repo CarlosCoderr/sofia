@@ -130,7 +130,7 @@ export function LabClient() {
           <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
             El Laboratorio necesita un proveedor de IA activo: configúralo en{" "}
             <Link
-              href="/settings/ai"
+              href="/ajustes/ia"
               className="font-medium text-brand-text underline underline-offset-2"
             >
               Ajustes → IA

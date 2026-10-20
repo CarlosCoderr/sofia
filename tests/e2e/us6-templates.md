@@ -4,7 +4,7 @@
 
 ## Ciclo de aprobación
 
-1. En `/settings/templates`: crear `seguimiento_cotizacion` (es_MX, UTILITY,
+1. En `/ajustes/plantillas`: crear `seguimiento_cotizacion` (es_MX, UTILITY,
    cuerpo con `{{1}}`).
    ✅ Queda en estado "Pendiente de Meta" (el mock devuelve PENDING).
 2. Simular la aprobación: `POST /api/dev/wa-mock/template-status`
@@ -31,7 +31,7 @@ modo agencia no es el de esta instancia: sin pull, la plantilla se queda
    ✅ `updated: 1`, estado "Aprobada" y categoría **MARKETING** (Meta es la
    autoridad de la categoría: reclasifica al aprobar y eso cambia el costo).
    ✅ Un segundo sync devuelve `updated: 0` (idempotente).
-10. Abrir `/settings/templates` con la plantilla en pending y Meta ya aprobada.
+10. Abrir `/ajustes/plantillas` con la plantilla en pending y Meta ya aprobada.
     ✅ El badge muestra "Aprobada" **sin tocar Sincronizar** (auto-sync al
     montar); si el pull falla, la lista local se pinta igual y el error se
     calla (solo el botón manual reporta errores).
@@ -52,7 +52,7 @@ modo agencia no es el de esta instancia: sin pull, la plantilla se queda
 > Playwright. Antes el CRM rechazaba en su propia pantalla lo que Meta sí
 > acepta: "v1 admite una sola variable {{1}} en el cuerpo".
 
-11. En `/settings/templates`, cuerpo con `{{1}}`, `{{2}}` y `{{3}}`.
+11. En `/ajustes/plantillas`, cuerpo con `{{1}}`, `{{2}}` y `{{3}}`.
     ✅ Sin aviso rojo, el botón habilitado y la pantalla anuncia "3 variables".
     ✅ A Meta va **un `example.body_text` por variable** (sin eso responde 100).
 12. Cuerpo con salto (`{{1}}` y `{{3}}`).

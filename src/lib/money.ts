@@ -65,7 +65,8 @@ export const CURRENCIES = CURRENCY_OPTIONS.map((c) => c.code) as [
   ...Currency[],
 ];
 
-export const DEFAULT_CURRENCY: Currency = "MXN";
+/** La moneda oficial del proyecto: soles. Cada negocio la cambia en Ajustes → Marca. */
+export const DEFAULT_CURRENCY: Currency = "PEN";
 
 export function isCurrency(v: unknown): v is Currency {
   return typeof v === "string" && (CURRENCIES as readonly string[]).includes(v);

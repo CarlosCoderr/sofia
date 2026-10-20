@@ -19,6 +19,8 @@ const prefixes = {
   testRun: "run",
   testCase: "case",
   mediaAsset: "ma",
+  // Módulo Medios — la biblioteca de imágenes y videos
+  mediaLibraryItem: "med",
   // 015 — motor de agenda
   calendarSettings: "cal",
   booking: "bk",
@@ -35,6 +37,16 @@ const prefixes = {
   dispatch: "dsp",
   // 026 — el aviso de que una conversación se eliminó
   olvido: "olv",
+  // Módulo SALON — catálogo, equipo y caja
+  service: "srv",
+  combo: "cmb",
+  staff: "stf",
+  staffServiceCommission: "ssc",
+  staffSchedule: "sch",
+  serviceSale: "sls",
+  serviceSaleItem: "sli",
+  serviceSaleDateChange: "sdc",
+  serviceSaleEdit: "sed",
 } as const;
 
 export type IdKind = keyof typeof prefixes;

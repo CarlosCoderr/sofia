@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { apiError, parseBody, withAuth } from "@/lib/api";
+import { canConfigure } from "@/lib/auth/roles";
 import {
   desconectarCanal,
   getCredentialsByOrg,
@@ -50,6 +51,9 @@ const putSchema = z.object({
  * reintentar (o pegar la URL a mano, que sigue a la vista).
  */
 export const PUT = withAuth(async (session, req: Request) => {
+  if (!canConfigure(session.role)) {
+    return apiError(403, "forbidden", "Solo el dueño o un administrador puede hacer esto");
+  }
   const body = await parseBody(req, putSchema);
   if (!body.ok) return body.response;
 
@@ -94,6 +98,9 @@ export const PUT = withAuth(async (session, req: Request) => {
  * conexión. Idempotente: sin conexión responde 200 igual.
  */
 export const DELETE = withAuth(async (session) => {
+  if (!canConfigure(session.role)) {
+    return apiError(403, "forbidden", "Solo el dueño o un administrador puede hacer esto");
+  }
   const creds = await getCredentialsByOrg(session.organizationId);
   if (creds) {
     await unregisterWebhookForNumber({

@@ -51,8 +51,8 @@ anterior) y, con `AGENDA`, citas de cada desenlace más una de prueba.
 6. **El Laboratorio no existe para Resultados**: se corre el Laboratorio
    completo y se le inventa un lead a uno de sus contactos; ningún número de
    las cuatro secciones cambia.
-7. `/results` carga con sesión y el menú lleva ahí; sin sesión, las cuatro
+7. `/resultados` carga con sesión y el menú lleva ahí; sin sesión, las cuatro
    rutas de analítica responden 401.
 
-La responsividad de `/results` (sin recorte a lo ancho en teléfono, tableta y
+La responsividad de `/resultados` (sin recorte a lo ancho en teléfono, tableta y
 escritorio) la cubre `scripts/e2e-responsive.mjs`.

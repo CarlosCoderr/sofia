@@ -42,10 +42,10 @@ describe("guía de inicio", () => {
     const guide = guideFrom({ steps: all(), enabled: false });
     expect(guide.steps.map((s) => s.key)).toEqual(["agent", "ai", "whatsapp", "calendar"]);
     expect(guide.steps.map((s) => s.href)).toEqual([
-      "/agent",
-      "/settings/ai",
-      "/settings/whatsapp",
-      "/settings/calendar",
+      "/agente",
+      "/ajustes/ia",
+      "/ajustes/whatsapp",
+      "/ajustes/calendario",
     ]);
     expect(guide).toMatchObject({ complete: true, enabled: false });
   });

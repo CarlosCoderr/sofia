@@ -9,14 +9,15 @@ import {
   FAVICON_MIMES,
   MAX_FAVICON_BYTES,
 } from "@/lib/favicon";
+import { DEFAULT_FAVICON_SRC } from "@/lib/favicon-default";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 /**
  * El icono de la pestaña.
  *
- * Se muestra SIEMPRE una vista previa: sin logo subido, la del icono generado
- * con la inicial y el acento. Así queda claro que la instancia ya tiene uno y
+ * Se muestra SIEMPRE una vista previa: sin logo subido, la del icono de la
+ * agencia (el predeterminado). Así queda claro que la instancia ya tiene uno y
  * que subir algo es reemplazarlo, no estrenarlo.
  */
 export function FaviconCard({ branding }: { branding: Branding }) {
@@ -28,7 +29,10 @@ export function FaviconCard({ branding }: { branding: Branding }) {
   const [rev, setRev] = useState(0);
   const [actual, setActual] = useState(branding.favicon);
 
-  const src = `${faviconHref({ ...branding, favicon: actual })}&r=${rev}`;
+  // Sin logo propio se ve el de Agencia Luvo, el mismo que lleva la pestaña.
+  const src = actual
+    ? `${faviconHref({ ...branding, favicon: actual })}&r=${rev}`
+    : DEFAULT_FAVICON_SRC;
 
   async function subir(file: File) {
     setError(null);
@@ -97,12 +101,12 @@ export function FaviconCard({ branding }: { branding: Branding }) {
           />
           <div className="min-w-0 flex-1">
             <p className="text-sm">
-              {actual ? "Logo propio" : "Generado con tu marca"}
+              {actual ? "Logo propio" : "Icono de Agencia Luvo"}
             </p>
             <p className="mt-0.5 text-xs text-text-3">
               {actual
-                ? "Reemplaza al generado en la pestaña y en la barra lateral. Puedes quitarlo para volver a él."
-                : "La inicial sobre tu color de acento. Sube tu logo para reemplazarla."}
+                ? "Reemplaza al de Agencia Luvo en la pestaña y en la barra lateral. Puedes quitarlo para volver a él."
+                : "Es el icono predeterminado de la pestaña. Sube tu logo para reemplazarlo."}
             </p>
           </div>
         </div>

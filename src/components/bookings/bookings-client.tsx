@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useEvents } from "@/components/use-events";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -79,13 +80,21 @@ export function BookingsClient({
   initialListTo,
   timezone: initialTimezone,
   weeklyHours: initialWeeklyHours,
+  embedded = false,
 }: {
   initialView: CalendarView | null;
   initialDate: string;
   initialListTo: string | null;
   timezone: string;
   weeklyHours: WeeklyHours;
+  /**
+   * Va dentro de la pantalla de Citas con pestañas (módulo SALON): esa pantalla
+   * ya pone el título, y «Agendar cita» lleva a la vista por sillas, donde se
+   * elige el profesional.
+   */
+  embedded?: boolean;
 }) {
+  const router = useRouter();
   // La vista se resuelve al montar (URL › última usada › tamaño de pantalla):
   // el servidor no sabe si esto es un celular.
   const [view, setView] = useState<CalendarView | null>(null);
@@ -308,9 +317,11 @@ export function BookingsClient({
   if (!view || !range || !today) {
     return (
       <div className="flex h-full flex-col">
-        <header className="border-b px-4 py-3 sm:px-6 sm:py-4">
-          <h2 className="text-[17px] font-bold tracking-tight">Citas</h2>
-        </header>
+        {!embedded && (
+          <header className="border-b px-4 py-3 sm:px-6 sm:py-4">
+            <h2 className="text-[17px] font-bold tracking-tight">Citas</h2>
+          </header>
+        )}
         <p className="p-6 text-sm text-text-3">Cargando…</p>
       </div>
     );
@@ -332,6 +343,12 @@ export function BookingsClient({
         onView={changeView}
         onListRange={changeListRange}
         onBlock={() => openBlock()}
+        showTitle={!embedded}
+        onNew={
+          embedded
+            ? () => router.push(`/citas?pestana=sillas&agendar=1&fecha=${anchor}`)
+            : undefined
+        }
       />
 
       {/* En escritorio ancho el panel de la cita EMPUJA el calendario en vez

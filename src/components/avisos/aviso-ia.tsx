@@ -20,7 +20,7 @@ export function AvisoIaBanner({ aviso }: { aviso: AvisoIa }) {
       <Sparkles className="h-4 w-4 shrink-0" strokeWidth={1.7} />
       <span className="min-w-0 flex-1">{aviso.mensaje}</span>
       <Link
-        href="/settings/ai"
+        href="/ajustes/ia"
         className="shrink-0 font-medium underline underline-offset-2"
       >
         {aviso.accion} →

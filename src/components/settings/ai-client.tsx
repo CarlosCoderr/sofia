@@ -20,6 +20,7 @@ import {
   type AiProviderId,
   type AiStatus,
 } from "@/lib/ai/presets";
+import { SearchSelect } from "@/components/ui/search-select";
 
 /**
  * Ajustes → IA: con qué piensa el agente (issue #85).
@@ -286,21 +287,20 @@ export function AiClient() {
           <form onSubmit={guardar} className="space-y-3">
             <div className="space-y-1.5">
               <Label htmlFor="ai-provider">Proveedor</Label>
-              <select
+              <SearchSelect
                 id="ai-provider"
                 value={provider}
-                onChange={(e) => {
-                  setProvider(e.target.value as AiProviderId);
+                onChange={(v) => {
+                  setProvider(v as AiProviderId);
                   setModelos(null);
                 }}
-                className="h-9 w-full rounded-md border border-input bg-card px-2 text-sm"
-              >
-                {AI_PROVIDERS.map((id) => (
-                  <option key={id} value={id}>
-                    {AI_PROVIDER_PRESETS[id].label}
-                  </option>
-                ))}
-              </select>
+                options={AI_PROVIDERS.map((id) => ({
+                  value: id,
+                  label: AI_PROVIDER_PRESETS[id].label,
+                }))}
+                searchPlaceholder="Buscar proveedor…"
+                triggerClassName="bg-card px-2"
+              />
               <p className="text-xs text-muted-foreground">
                 {preset.baseUrl
                   ? `Habla con ${preset.baseUrl}. Una sola llave da acceso a los modelos de todos los laboratorios.`

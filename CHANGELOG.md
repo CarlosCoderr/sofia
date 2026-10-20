@@ -5,6 +5,257 @@ sigue el SemVer del [README](README.md#versiones): una menor trae funciones
 nuevas y actualizar es redesplegar. Desde 1.4.0, cada tag `vX.Y.Z` publica la
 imagen `ghcr.io/kevinrivm/vocero-crm:X.Y.Z`.
 
+## Sin publicar
+
+- **Panel**: el filtro de equipo lleva la etiqueta «Profesional:» a su izquierda. Al elegir a alguien, tarjetas, gráficos, servicios top y rendimiento se recalculan solo con su actividad (los cumpleaños del mes son de todos los clientes).
+- **Panel sin segundo scroll ni espacio vacío**: la tabla oculta para lectores de pantalla de los gráficos quedaba posicionada fuera del área con scroll y alargaba toda la página. El área de contenido ahora es `relative`, así que nada oculto puede ensanchar el documento (comprobado en Panel, Resultados, Caja, Clientes y Citas).
+- **Barra lateral**: en escritorio, si la ventana es baja y el menú no cabe, ahora se desplaza (antes lo cortaba y no se llegaba a Ajustes ni a cerrar sesión).
+
+### Cerrar sesión pide confirmación
+
+- El botón de la barra lateral abre «¿Seguro que quieres cerrar sesión?» (centrado, con X, Escape y clic fuera
+  para cancelar); solo «Cerrar sesión» sale.
+
+### Medios: solo archivos locales, vista compacta y borrado en lote
+
+- **Sin enlaces:** se quitó «Insertar desde URL» (botón, ventana, `POST /api/medios/url` y la descarga
+  remota con su guardia SSRF), y «Copiar URL», «Abrir» y la barra con la ruta del archivo. Solo se sube
+  desde el dispositivo. La ruta pública del archivo sigue sirviendo las imágenes en la app.
+- **Vista compacta:** el visor de pantalla completa pasó a una ventana centrada, con el nombre editable
+  (`PATCH /api/medios/[id]`; la URL interna no cambia), Descargar y Borrar.
+- **Galería:** tacho de borrado rápido al pasar el cursor y casillas de selección con «Eliminar
+  seleccionados» (`POST /api/medios/eliminar`; los que no se pueden borrar se avisan sin frenar al resto).
+
+### Entrada directa al Panel (módulo SALON)
+
+- Con SALON encendido, la raíz `/` (y, por tanto, iniciar sesión) lleva al Panel y «Panel» queda activo. Un
+  miembro del equipo, que no ve el Panel, entra a Citas (con agenda) o a Contactos. Sin SALON, todo igual.
+
+### Barra lateral de la v1.0 (módulo SALON)
+
+- **Orden:** Trabajo → Panel · Caja · Citas · Clientes · Contactos · Servicios · Equipo · Medios; Sistema → Ajustes.
+- **Oculto hasta la v2.0:** Bandeja, Pipeline y el bloque Agente (Guía de inicio, Agente, Laboratorio, Resultados).
+  Solo se quitan los enlaces: las rutas siguen funcionando. `NAV_V2` en `src/lib/nav.ts` los devuelve al menú.
+
+### Caja: «Editar venta» con auditoría (módulo SALON)
+
+- **Editar:** cada fila de Caja tiene un lápiz (dueño/administrador) que abre «Editar venta»: ítems
+  (carrito con «Otro» y su detalle), quién atendió, monto cobrado y comisión puntual opcional. El cliente,
+  la fecha y el método de pago no cambian aquí. `PUT /api/negocio/ventas/[id]`.
+- **Auditoría:** tabla `service_sale_edit` (migración `0032`): en la misma transacción que la corrección
+  guarda la venta antes y después (profesional, monto, comisión, ítems), quién y cuándo. Sin cambios reales
+  no escribe nada. Sin clave foránea a la venta, así el rastro sobrevive a una anulación.
+- **Sincronización:** el historial y las métricas de la ficha del Cliente y el Panel leen de las ventas, así
+  que se actualizan solos. El reparto y la comisión se recalculan con las reglas vigentes.
+
+### Clientes: «Nuevo cliente» con el mismo carrito que Caja (módulo SALON)
+
+- **Mismo formulario que «Registrar venta»:** Nombre + Celular, Cumpleaños, Atendió (con la Fecha de
+  atención al lado), Servicios y ofertas (carrito con «Otro» y su detalle obligatorio), Monto cobrado
+  (suma automática, editable), Método de pago y Comisión distinta (%). Los campos viven en
+  `src/components/negocio/sale-cart.tsx` y los usan los dos modales.
+- **API:** `POST /api/negocio/clientes` recibe `items`, `amountCents`, `paymentMethod` y
+  `customCommissionPercentage`; ya no hay un solo servicio ni precio de lista fijo.
+- **Editar cliente:** solo datos del perfil (Nombre, Celular, Cumpleaños, Notas); las ventas se ven en el
+  historial y no se editan desde ahí (solo la fecha, con auditoría).
+
+### Caja: detalle obligatorio en «Otro» y búsqueda por celular sin duplicados (módulo SALON)
+
+- **«Otro» con detalle:** al agregar «Otro» al carrito (y al dar de alta un cliente con «Otro») aparece
+  «Escribe qué servicio u oferta es…», obligatorio (máx. 80). Se guarda en `service_sale_item.note`
+  (migración `0031`) y Caja y el historial del cliente lo muestran como «Otro: Peinado para evento».
+- **Autocompletado por celular:** `GET /api/negocio/contactos/buscar` consolida por celular normalizado
+  cuando se escribe un número (una sola ficha por teléfono: la que ya es cliente o, si empatan, la más
+  reciente). Por nombre sigue mostrando todas las coincidencias.
+
+### Caja: ventas con varios servicios y «Yape / Plin» unificado (módulo SALON)
+
+- **Carrito de venta**: «Registrar venta» admite varios servicios u ofertas en el mismo ticket (se buscan y agregan uno a uno, cada uno con su X para quitarlo; «Otro» lleva su propio precio). El «Monto cobrado» es la suma de los ítems y se puede editar a mano («Usar la suma» lo restablece). Solo salen los profesionales que dan TODO lo del carrito.
+- **Se guarda por ítem** (`service_sale_item`): si el monto se editó, el total se reparte proporcional entre los ítems sin perder un centavo, así el desglose por servicio del Panel y de Caja suma exactamente lo cobrado. La comisión se calcula por ítem (cada servicio con su porcentaje) y se suma. Una venta con varios ítems cuenta como UNA atención; el ranking de servicios cuenta cada ítem.
+- **Ya no se bloquea el precio de lista**: el monto cobrado puede diferir de la suma de los precios (antes la API devolvía `price_mismatch`). El Historial de Clientes y Caja muestran todos los servicios de cada venta unidos con « + ». `POST /api/negocio/ventas` acepta `items` (la forma de un solo ítem sigue valiendo).
+- **Yape y Plin son un solo método** («Yape / Plin»): Efectivo, Yape / Plin, Tarjeta y Otro. Las ventas anteriores se convierten solas.
+- Migración `0030_ventas_con_varios_items` (crea los ítems y convierte las ventas existentes, un ítem por venta). **Actualizar**: redesplegar.
+
+### Panel rediseñado como centro de mando (módulo SALON)
+
+- **4 tarjetas con tendencia**: ventas del mes (o del periodo), ticket promedio (ventas ÷ atenciones), atenciones y tasa de retención (de los clientes atendidos en el periodo, % con 2 o más visitas). «Este mes» se compara con el mismo tramo del mes anterior; cualquier otro rango, con el tramo anterior de igual duración.
+- **Gráficos** (HTML/CSS, sin librerías): ingresos por día, semana (32-92 días) o mes con detalle al pasar el cursor; métodos de pago en dona (Efectivo, Yape/Plin, Tarjeta, Otro); servicios y ofertas top por ingresos o por veces vendido; rendimiento del equipo con ventas y comisión por profesional.
+- **Selector**: Hoy, Esta semana, Este mes, Mes pasado o fechas a mano (calendario); el filtro por profesional sigue. Los cumpleaños del mes se conservan. `GET /api/negocio/panel` suma `retention`, `comparison` y `series`. Sin migración.
+
+### Avisos de validación sin prisa y autocompletado global (Contactos, Clientes y Caja)
+
+- Los avisos rojos de nombre y celular ya no aparecen mientras se teclea: solo al salir del campo con la información a medias, o al pulsar crear/guardar. En Contactos el botón ya no se apaga: al pulsarlo con algo mal muestra los avisos. `PhoneInput` acepta `onBlur`.
+- **Autocompletado global**: en Caja (registrar venta) y en el alta de Clientes, al escribir el celular (3+ dígitos) o el nombre se buscan TODOS los contactos de WhatsApp con celular —clientes o no— («Cliente registrado encontrado» / «Contacto de WhatsApp encontrado»). Al elegir uno se completan sus datos y la venta se registra sobre ese contacto: si solo era de WhatsApp pasa a ser cliente (`salon_client = true`) sin duplicar su ficha. Nueva ruta `GET /api/negocio/contactos/buscar` (equipo del salón).
+
+### Contactos: formulario de alta con validación en vivo
+
+- **Celular** (antes «Teléfono con código de país»): +51 fijo, solo dígitos, exactamente 9, con máscara `921 926 452`. Se envía como `51921926452`.
+- **Nombre** solo con letras y espacios (placeholder «Ej. Carlos Mendoza») y **Notas** con un ejemplo del rubro. Errores bajo cada campo y botón inhabilitado hasta que sean válidos. La API de contactos no se endureció: sigue aceptando otros países y nombres libres (importaciones y scripts).
+
+### Integridad de contactos, clientes y Caja (módulo SALON)
+
+- **Bandeja**: al borrar una conversación junto con el contacto, si tiene ventas en Caja se muestra una advertencia (el dinero y las comisiones se conservan en los reportes; se van conversaciones, leads y ficha). No bloquea. `GET /api/contacts/:id` devuelve `salesCount`.
+- **Auditoría de la fecha de una venta**: corregir la fecha de una atención deja una fila en `service_sale_date_change` (quién, cuándo, fecha anterior y nueva) dentro de la misma transacción. La venta pasa sola al periodo correcto de Caja y comisiones. La tabla solo se inserta y no depende de la venta, así que el rastro sobrevive si la venta se anula.
+- Alta de clientes: una carrera con el mismo celular ya no deja una venta sin persona; el borrado masivo decide y borra en una sola transacción con los contactos bloqueados.
+- Migración `0029_auditoria_fecha_venta`. **Actualizar**: redesplegar.
+
+### Clientes: campos estrictos, fechas sin hora y historial de atenciones (módulo SALON)
+
+- **Nombre solo con letras y espacios** y **celular de exactamente 9 dígitos** (+51 fijo), validados igual en pantalla y en la API.
+- **Fecha de atención** con un calendario propio que se ve y se elige como `DD/MM/AAAA` (sin horas en pantalla); también al corregir la fecha de una atención del historial.
+- **Registrado el: DD/MM/AAAA** en la cabecera de la ficha (automático, no editable).
+- El celular se ve `+51 912 345 678` en la lista y en la ficha.
+- Al crear un cliente la ventana se cierra sola y la lista se refresca.
+- **Historial de atenciones**: fecha, servicio u oferta, profesional, método de pago y monto.
+- **Alta con detección de clientes existentes**: al escribir el celular (3 o más dígitos) o el nombre se sugieren clientes ya registrados («Cliente registrado encontrado: …»); al elegir uno se completan su nombre y cumpleaños y el foco pasa a la atención. Al guardar no se duplica: la atención se suma a su historial (una visita más y su monto al total invertido). Ya no responde 409 `client_exists` al dar de alta a un cliente repetido; `GET /api/negocio/clientes` acepta `?limit=`.
+- **Lista de Clientes**: contador («Mostrando 10 de 45 clientes»), paginación de 10 en 10, casillas para seleccionar (con maestra por página) y barra «Eliminar seleccionados»: quien tiene historia (atenciones, conversaciones, citas…) solo deja de aparecer en Clientes y se conserva todo; quien no tiene nada se borra por completo. El número de «Visitas» abre la línea de tiempo del cliente. Nueva ruta `POST /api/negocio/clientes/eliminar`.
+
+### Equipo: foto, celular, nombre estricto y servicios por profesional (módulo SALON)
+
+- **Foto del profesional** elegida de la galería de Medios (buscador, borrar desde la galería y
+  solo imágenes: el video se bloquea en pantalla y en el servidor). Se ve en la tabla de Equipo.
+- **Celular**: la etiqueta pasa de «Teléfono (opcional)» a «Celular», con el **+51** fijo y
+  exactamente **9 dígitos** (solo números; se guarda como `+51987654321`). Sigue siendo opcional.
+- **Nombre solo con letras y espacios** (tildes y ñ incluidas): números y signos no se pueden
+  teclear ni pegar, y la API los rechaza. Un celular o nombre guardado antes en otro formato se
+  muestra y se corrige al editar.
+- **Quién da cada servicio se elige solo desde Servicios y Ofertas** (la lista de profesionales,
+  sin detallar = todos). El perfil del profesional no guarda ni restringe servicios: todo profesional
+  activo se puede elegir en cualquiera. La lista de Equipo muestra foto, nombre, celular y acciones.
+- Migraciones `0027_equipo_foto_y_servicios` (foto) y `0028_equipo_sin_servicios` (retira la tabla
+  `staff_allowed_service`). **Actualizar**: redesplegar.
+
+### Imagen y profesionales en Servicios y Ofertas (módulo SALON)
+
+- **Imagen** arriba del nombre, elegida de la biblioteca de **Medios** (sin escribir URL): una
+  ventana deja elegir una imagen existente o subir una nueva (JPG/PNG hasta 3 MB, WEBP/AVIF hasta
+  1,5 MB), con previsualización y «Cambiar imagen» / «Eliminar». La lista de Servicios y Ofertas
+  muestra la miniatura.
+- **«Detallar profesionales que dan el servicio (Opcional)»** bajo el nombre: apagada, lo dan
+  todos los profesionales (es lo normal y lo que se guarda: sin filas); encendida, una lista con
+  buscador para marcar cuáles. Igual en Servicios y en Ofertas.
+- **La regla se cumple**: la caja y la ficha del cliente solo ofrecen a quienes dan lo que se
+  vende, la API rechaza el resto (`409 staff_not_assigned`) y el agente de IA sabe quién da qué
+  cuando está detallado. «Otro» lo cobra cualquiera.
+- **Galería del selector**: buscador por nombre bajo el encabezado, botón para borrar cada
+  imagen (con confirmación; el campo del formulario se vacía al instante si era la elegida) y
+  solo imágenes: el video se bloquea en la pantalla **y en el servidor** (`POST /api/medios?tipo=image`).
+- **Profesionales**: el buscador de la lista está siempre visible. La previsualización (lista y
+  ojo) muestra «Todos los profesionales» cuando no se detalló ninguno (sin enumerarlos) y, con
+  detallados, `Profesional: Cheo` (uno) o `Profesionales: Cheo, Mari` (varios). Igual en Servicios
+  y en Ofertas.
+- Si se borra el medio, el servicio queda sin imagen; si se borra un profesional, sale de las listas
+  (si era el único, el servicio vuelve a ser de todos). Migración `0026_imagen_y_profesionales`.
+- **Actualizar**: redesplegar; la migración se aplica al arrancar.
+
+### Medios: biblioteca de imágenes y videos
+
+- **Medios** (`/medios`, cualquier miembro del equipo): una biblioteca al estilo de WordPress.
+  Cuadrícula de archivos, filtro por tipo, búsqueda por nombre y vista ampliada (lightbox) con
+  flechas del teclado. Cada archivo tiene su URL pública lista para **Copiar URL**.
+- **Dos formas de agregar**: subir desde el dispositivo (también arrastrando, varios a la vez, con
+  barra de avance) o **Insertar desde URL**: el servidor descarga el enlace y lo guarda.
+- **Límites** (validados en el navegador y, sobre todo, en el servidor): JPG y PNG hasta 3 MB,
+  WEBP y AVIF hasta 1,5 MB, MP4 hasta 50 MB. El formato se decide por los bytes del archivo, no
+  por su nombre ni su `Content-Type`; SVG, GIF y HTML se rechazan.
+- **Enlaces externos protegidos contra SSRF**: la IP se valida al conectar (y en cada redirección),
+  se rechazan direcciones internas, credenciales en la URL y puertos que no sean 80/443.
+- El archivo vive en `MEDIA_DIR/<org>/medios/`, sin servicios de terceros. La URL se sirve con
+  `Range` (el video se reproduce en Safari), `nosniff` y una CSP que no deja ejecutar nada.
+  Migración `0025_modulo_medios`. Prueba: `pnpm test:e2e:medios`.
+- **Actualizar**: redesplegar; la migración se aplica al arrancar.
+
+### Panel ejecutivo y analítica (módulo SALON)
+
+- **Panel** (`/panel`, dueño/administrador): KPIs del periodo (ingresos, ganancia neta,
+  comisiones, ticket promedio, citas), rendimiento por profesional, ranking de servicios y
+  ofertas, y los clientes que cumplen años este mes (con enlace para saludar por WhatsApp).
+  Un selector de fechas recalcula todo.
+- **Panel** concentra el análisis: tarjetas por profesional (servicios, vendido, comisión,
+  neto, ticket), ranking de demanda y filtro por profesional (`?staffId=`). **Caja** queda
+  para el dinero: indicadores, cuadre por método de pago y la tabla de ventas con anulación.
+
+### Icono de la pestaña
+
+- El icono predeterminado es `src/medios/favicon-agencia-luvo.png`. Mientras el negocio no suba
+  el suyo en Ajustes → Marca, la pestaña (login incluido) lleva el de Agencia Luvo; al subirlo
+  manda el suyo, y al quitarlo vuelve al de la agencia. Cambiar nombre o color no lo altera.
+
+### Clientes del salón (módulo SALON)
+
+- **Clientes** (`/clientes`, dueño/administrador): un contacto pasa a ser
+  cliente en cuanto tiene su primera venta en Caja (no hay marca que
+  mantener: se deduce de las ventas con ese contacto). Tabla con nombre,
+  celular, cumpleaños, visitas, última visita y total invertido, búsqueda por
+  nombre o celular, y ficha con el historial (fecha, servicio u oferta,
+  profesional, monto) donde se completa o corrige el cumpleaños.
+- **CRUD completo**: «Nuevo cliente», editar (nombre, celular, cumpleaños, notas) y eliminar
+  (solo lo quita de Clientes; el contacto y sus ventas se conservan). Migración `0023`.
+  Regla: un cliente siempre adquirió un servicio, así que «Nuevo cliente» pide servicio u
+  oferta, quién atendió y método de pago, y registra esa primera venta (al precio de lista).
+- **Alta de cliente afinada**: celular «999 999 999», desplegables con buscador (día y mes lado a lado),
+  fecha de la atención editable (hoy por defecto) y la opción **Otro** (precio a criterio, también en Caja).
+  «Otro» usa un servicio comodín por organización que no aparece en el catálogo. Migración `0024`.
+- Al cobrar se piden nombre y celular (se reutiliza o crea el contacto) y,
+  opcional, el cumpleaños (día y mes; migración `0022`).
+- El monto cobrado queda en el precio de lista: el servidor rechaza con 400
+  cualquier otro.
+
+### Páginas en español y sin tema oscuro
+
+- **Las URL de las páginas ahora están en español**: `/bandeja`, `/contactos`,
+  `/citas`, `/agente`, `/laboratorio`, `/resultados`, `/guia-de-inicio`,
+  `/ajustes` (con `/ajustes/anuncios`, `/ia`, `/marca`, `/calendario`,
+  `/canales`, `/equipo` y `/plantillas`), `/iniciar-sesion` y `/registro`.
+  `/pipeline` y los canales (`instagram`, `messenger`, `tiktok`, `whatsapp`) conservan su
+  nombre. Las URL antiguas redirigen (308) a las nuevas, así que los enlaces
+  guardados siguen funcionando. **`/api/*` no cambia**: es el contrato publicado.
+- **Se eliminó el tema oscuro** y su botón. La barra lateral sigue siendo azul marino.
+- **Servicios, Equipo y Caja** son páginas propias con su entrada en el menú, debajo
+  de Citas (antes eran pestañas de `/negocio`). **La agenda por sillas ya no es un
+  ítem aparte: es la vista principal de Citas** (`/citas`), con una pestaña «Vista
+  por sillas» y otra «Calendario y bloqueos». El botón **Agendar cita** (y cada
+  celda «Libre») abre un formulario con cliente, hora con cupo y profesional libre
+  a esa hora; `/agenda-por-sillas` redirige a `/citas?pestana=sillas`.
+- **Restablecer la contraseña con un código por correo.** En el inicio de sesión,
+  «¿Olvidaste tu contraseña?» pide el correo, envía un código de 6 dígitos (vale
+  10 minutos, un solo uso, 5 intentos) y con él se elige la contraseña nueva en
+  `/recuperar-contrasena`. Al restablecer, se cierran las sesiones abiertas. No
+  revela si un correo tiene cuenta y limita las solicitudes por correo y por IP.
+  **Es opcional y apagado por defecto**: necesita `SMTP_HOST` y `SMTP_FROM` (el
+  SMTP de tu propio negocio; ver `.env.example`). Sin ellas la pantalla lo
+  explica y el resto del CRM funciona igual. Agrega la dependencia `nodemailer`.
+- **Las cuentas se crean solo por backend.** Se eliminó la pantalla de registro
+  (`/registro`) y el enlace «Crear la cuenta inicial»; `POST /api/auth/sign-up/email`
+  responde 403 siempre. La primera cuenta (que crea la organización) y las
+  siguientes se dan de alta con `pnpm crear-usuario` (en el contenedor,
+  `node crear-usuario.mjs`); el propietario sigue creando las del equipo desde
+  Ajustes → Equipo. **Antes de actualizar**: los arneses E2E que se registraban
+  por la API necesitan `ALLOW_SIGNUP=true` en la instancia de prueba.
+- **La moneda por defecto son soles (PEN)** y se puede cambiar en Ajustes → Marca →
+  Moneda del negocio; el módulo Negocio (precios, caja, comisiones) y el agente
+  usan esa misma moneda. Un negocio que ya guardó otra moneda la conserva.
+- Color principal por defecto: `#0328ba`. Los campos de contraseña llevan un ojo
+  para mostrarla u ocultarla.
+
+### Módulo para barberías, salones y manicure (031)
+
+Opcional y apagado por defecto: con `SALON=on` aparecen **Servicios, Equipo, Caja y Agenda por sillas** en el menú (debajo de Citas),
+con servicios y combos de publicidad pagada, equipo con comisiones y horarios,
+caja con cierres diarios y mensuales y una agenda por sillas donde varios
+profesionales atienden a la vez. Sin la variable, nada cambia. La agenda por
+sillas necesita además `AGENDA=on`. Detalle en
+[specs/031-modulo-salon](specs/031-modulo-salon/spec.md).
+
+#### Actualizar
+
+1. Respalda la base y redespliega. La migración `0021` es aditiva y corre sola
+   al arrancar.
+2. **Cambia un índice** de `booking`: `booking_org_active_slot_uq` pasa a ser
+   único por instante *y silla*. Para quien no usa sillas es exactamente lo de
+   siempre (las citas sin asignar siguen chocando entre sí).
+3. Para encender el módulo pon `SALON=on` y **redespliega**.
+
 ## 1.6.0 — 2026-10-14
 
 La versión multicanal. Instagram, Messenger y ahora TikTok llegan a la misma

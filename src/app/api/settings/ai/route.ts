@@ -1,4 +1,5 @@
 import { apiError, parseBody, withAuth } from "@/lib/api";
+import { canConfigure } from "@/lib/auth/roles";
 import {
   AiCredentialError,
   deleteAiCredential,
@@ -24,6 +25,9 @@ export const GET = withAuth(async (session) => {
 });
 
 export const PUT = withAuth(async (session, req: Request) => {
+  if (!canConfigure(session.role)) {
+    return apiError(403, "forbidden", "Solo el dueño o un administrador puede hacer esto");
+  }
   const body = await parseBody(req, aiSettingsPutSchema);
   if (!body.ok) return body.response;
 
@@ -45,6 +49,9 @@ export const PUT = withAuth(async (session, req: Request) => {
 });
 
 export const DELETE = withAuth(async (session) => {
+  if (!canConfigure(session.role)) {
+    return apiError(403, "forbidden", "Solo el dueño o un administrador puede hacer esto");
+  }
   await deleteAiCredential(session.organizationId);
   return Response.json(await vistaAjustesIa(session.organizationId));
 });

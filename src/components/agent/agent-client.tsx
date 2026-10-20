@@ -162,7 +162,7 @@ export function AgentClient() {
             abajo.
           </p>
           <Link
-            href="/settings/ai"
+            href="/ajustes/ia"
             className="mt-3 inline-block text-sm font-medium text-brand-text underline underline-offset-2"
           >
             Ir a Ajustes → IA →

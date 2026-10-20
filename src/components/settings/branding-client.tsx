@@ -8,7 +8,6 @@ import {
   DEFAULT_BRANDING,
   isValidHex,
   resolveAccentSet,
-  resolveNavAccentSet,
   type AccentSet,
   type Branding,
 } from "@/lib/branding";
@@ -19,13 +18,13 @@ import {
   type Currency,
 } from "@/lib/money";
 import { cn } from "@/lib/utils";
-import { useResolvedTheme } from "@/components/use-theme";
 import { BrandLogo } from "@/components/brand-mark";
 import { navItemClass } from "@/components/app-nav";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SearchSelect } from "@/components/ui/search-select";
 
 /** Los tokens del acento, para sobreescribirlos SOLO dentro de una caja. */
 function accentVars(s: AccentSet): React.CSSProperties {
@@ -41,10 +40,7 @@ function accentVars(s: AccentSet): React.CSSProperties {
 
 export function BrandingClient({
   favicon = null,
-  kicker = "CRM · WhatsApp",
 }: {
-  /** 028 — La etiqueta bajo el logo, la misma que enseña el menú. */
-  kicker?: string;
   /**
    * Logo subido, solo para la vista previa: se sube y se quita en su propia
    * tarjeta. Llega del servidor y no del fetch de abajo a propósito: esa
@@ -55,7 +51,6 @@ export function BrandingClient({
   favicon?: Branding["favicon"];
 }) {
   const router = useRouter();
-  const mode = useResolvedTheme();
   const [name, setName] = useState("");
   const [accent, setAccent] = useState<string>(DEFAULT_BRANDING.accent);
   const [currency, setCurrency] = useState<Currency>(DEFAULT_CURRENCY);
@@ -79,11 +74,9 @@ export function BrandingClient({
   }, []);
 
   const isPreset = accent.toLowerCase() in ACCENT_PRESETS;
-  // La vista previa muestra el acento tal como se verá en el tema activo: los
-  // presets están pensados para fondo claro y en oscuro se aclaran. La barra
-  // lateral es azul marino en los dos temas y lleva su propio cálculo.
-  const previewSet = resolveAccentSet(accent, mode);
-  const navSet = resolveNavAccentSet(accent);
+  // La vista previa muestra el acento tal como se verá (con el contraste ya
+  // ajustado); la barra lateral es azul marino y lleva su propio cálculo.
+  const previewSet = resolveAccentSet(accent);
 
   async function save() {
     setSaving(true);
@@ -134,22 +127,22 @@ export function BrandingClient({
 
           <div className="space-y-1.5">
             <Label htmlFor="brand-currency">Moneda del negocio</Label>
-            <select
+            <SearchSelect
               id="brand-currency"
               value={currency}
-              onChange={(e) => setCurrency(e.target.value as Currency)}
-              className="h-9 max-w-xs rounded-md border border-input bg-card px-2 text-sm"
-            >
-              {CURRENCY_GROUPS.map((g) => (
-                <optgroup key={g.id} label={g.label}>
-                  {CURRENCY_OPTIONS.filter((c) => c.group === g.id).map((c) => (
-                    <option key={c.code} value={c.code}>
-                      {c.code} · {c.name} ({c.where})
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
+              onChange={(v) => setCurrency(v as Currency)}
+              options={CURRENCY_GROUPS.flatMap((g) =>
+                CURRENCY_OPTIONS.filter((c) => c.group === g.id).map((c) => ({
+                  value: c.code,
+                  label: `${c.code} · ${c.name} (${c.where})`,
+                  group: g.label,
+                }))
+              )}
+              searchPlaceholder="Buscar moneda o país…"
+              className="max-w-xs"
+              minListWidth={300}
+              triggerClassName="bg-card px-2"
+            />
             <p className="text-xs text-text-3">
               Es la única que el Pipeline suma. Los montos capturados en otra
               moneda se muestran, pero quedan fuera del total de su columna.
@@ -174,7 +167,7 @@ export function BrandingClient({
                 >
                   <span
                     className="h-4 w-4 rounded-full"
-                    style={{ background: resolveAccentSet(hex, mode).accent }}
+                    style={{ background: resolveAccentSet(hex).accent }}
                   />
                   {preset.label}
                 </button>
@@ -202,24 +195,23 @@ export function BrandingClient({
 
           {/* Vista previa: el bicolor real en miniatura, con el color que se
               está eligiendo (aún sin guardar). A la izquierda la barra, con la
-              misma clase (`nav-dark`) y el mismo renglón activo que la de
-              verdad; a la derecha la página en el tema activo, con su botón. */}
+              misma clase (`nav-panel`) y el mismo renglón activo que la de
+              verdad; a la derecha la página, con su botón. */}
           <div
             aria-label="Vista previa de la marca"
             className="flex flex-col overflow-hidden rounded-md border border-border-strong sm:flex-row"
           >
             <div
-              className="nav-dark shrink-0 bg-subtle p-3 text-foreground sm:w-60"
-              style={accentVars(navSet)}
+              className="nav-panel shrink-0 bg-subtle p-3 text-foreground sm:w-60"
+              style={accentVars(previewSet)}
             >
               <div className="px-2 pt-0.5">
                 <BrandLogo
                   branding={{ name: name.trim() || DEFAULT_BRANDING.name, accent, favicon }}
                 />
-                <span className="kicker mt-2 block">{kicker}</span>
               </div>
               <span className={cn(navItemClass(true), "mt-3")}>
-                <Inbox className="h-[17px] w-[17px] text-brand" strokeWidth={1.8} />
+                <Inbox className="h-[17px] w-[17px] text-brand-fg" strokeWidth={1.8} />
                 <span className="flex-1">Bandeja</span>
               </span>
             </div>

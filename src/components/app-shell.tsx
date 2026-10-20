@@ -4,8 +4,6 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { Menu } from "lucide-react";
 import type { Branding } from "@/lib/branding";
-import type { ThemePreference } from "@/lib/theme";
-import type { ResolvedCommit } from "@/lib/version";
 import { AppNav } from "@/components/app-nav";
 import { BrandLogo } from "@/components/brand-mark";
 
@@ -25,23 +23,18 @@ export function AppShell({
   branding,
   userName,
   role,
-  theme,
-  commit,
   agenda = false,
-  kicker,
+  salon = false,
   aviso = null,
   children,
 }: {
   branding: Branding;
   userName: string;
   role: string;
-  theme: ThemePreference;
-  /** Commit resuelto en el servidor, con su procedencia (ver `resolveCommit`). */
-  commit?: ResolvedCommit;
   /** 015 — ¿esta instancia tiene agenda? Lo decide el servidor. */
   agenda?: boolean;
-  /** 028 — La etiqueta bajo el logo (`navKicker`). */
-  kicker?: string;
+  /** Módulo SALON (barberías, salones): lo decide el servidor. */
+  salon?: boolean;
   /**
    * Franja de aviso por encima de TODA la aplicación (#85).
    *
@@ -84,20 +77,18 @@ export function AppShell({
 
       <AppNav
         branding={branding}
-        commit={commit}
         userName={userName}
         role={role}
-        theme={theme}
         agenda={agenda}
-        kicker={kicker}
+        salon={salon}
         open={navOpen}
         onClose={() => setNavOpen(false)}
       />
 
       <div className="flex min-w-0 flex-1 flex-col">
-        {/* Misma pieza que la barra lateral (`nav-dark`): en el teléfono la
+        {/* Misma pieza que la barra lateral (`nav-panel`): en el teléfono la
             franja azul marino de arriba es lo que queda del bicolor. */}
-        <header className="nav-dark flex h-12 shrink-0 items-center gap-1.5 border-b bg-subtle px-2 text-foreground lg:hidden">
+        <header className="nav-panel flex h-12 shrink-0 items-center gap-1.5 border-b bg-subtle px-2 text-foreground lg:hidden">
           <button
             onClick={() => setNavOpen(true)}
             aria-label="Abrir el menú"
@@ -111,7 +102,7 @@ export function AppShell({
 
         {aviso}
 
-        <main className="min-h-0 min-w-0 flex-1 overflow-hidden">{children}</main>
+        <main className="relative min-h-0 min-w-0 flex-1 overflow-hidden">{children}</main>
       </div>
     </div>
   );
