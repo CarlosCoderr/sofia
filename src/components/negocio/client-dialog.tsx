@@ -705,7 +705,7 @@ export function ClientDialog({
                         onChange={setSoldOn}
                         disabled={busy}
                         invalid={!!errors.soldOn}
-                        className="w-44"
+                        className="w-full"
                       />
                     </Field>
                   </div>

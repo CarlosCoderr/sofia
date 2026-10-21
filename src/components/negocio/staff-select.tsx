@@ -54,7 +54,7 @@ export function staffIdsToSend(
 }
 
 /** Lo que se lee cuando nadie queda excluido de un servicio u oferta. */
-export const TODOS_LOS_PROFESIONALES = "Todos los profesionales";
+const TODOS_LOS_PROFESIONALES = "Todos los profesionales";
 
 function label(names: string[]): string {
   return `${names.length === 1 ? "Profesional" : "Profesionales"}: ${names.join(", ")}`;

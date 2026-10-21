@@ -16,7 +16,9 @@ import {
   SaleItemsField,
   useSaleCart,
 } from "@/components/negocio/sale-cart";
+import { DatePicker } from "@/components/ui/date-picker";
 import { MONTH_NAMES } from "@/lib/salon/format";
+import { isPersonName, sanitizePersonName } from "@/lib/salon/staff-fields";
 import { saleInputSchema, type PaymentMethod } from "@/lib/salon/schemas";
 import { itemsAreRestricted, staffAfterItemsChange, staffForItems } from "@/lib/salon/staff-for-item";
 import { formatPeruPhone } from "@/lib/salon/format";
@@ -57,12 +59,15 @@ export function SaleDialog({
   currency,
   canAdjustCommission,
   initial,
+  today,
   onClose,
   onSaved,
 }: {
   currency: string;
   canAdjustCommission: boolean;
   initial?: SaleDialogInitial;
+  /** Hoy en la zona del negocio (AAAA-MM-DD): el día con que arranca la atención. */
+  today: string;
   onClose: () => void;
   onSaved: (result: RegisteredSaleDto) => void;
 }) {
@@ -83,6 +88,7 @@ export function SaleDialog({
     phone: customerPhone,
   });
   const [staffId, setStaffId] = useState(initial?.staffId ?? "");
+  const [soldOn, setSoldOn] = useState(today);
   const cart = useSaleCart(options, currency, (vals) =>
     // Si quien estaba elegido no da todo lo del carrito, se cambia o se vacía.
     setStaffId((cur) => staffAfterItemsChange(options, vals, cur)),
@@ -138,6 +144,8 @@ export function SaleDialog({
       birthdayDay: birthdayDay ? Number(birthdayDay) : null,
       birthdayMonth: birthdayMonth ? Number(birthdayMonth) : null,
       staffId,
+      // Hoy se guarda «ahora»; otro día (pasado o futuro) se guarda a ese día.
+      soldOn: soldOn && soldOn !== today ? soldOn : null,
       items: cart.payload(),
       bookingId: initial?.bookingId ?? null,
       amountCents: cart.amountCents(),
@@ -234,7 +242,7 @@ export function SaleDialog({
                 label="Nombre del cliente"
                 htmlFor="sale-customer"
                 error={errors.customerName}
-                hint="Vacío: cliente de mostrador."
+                hint="Solo letras y espacios. Vacío: cliente de mostrador."
               >
                 <Input
                   id="sale-customer"
@@ -242,8 +250,26 @@ export function SaleDialog({
                   maxLength={80}
                   autoComplete="off"
                   placeholder="Ej. María Pérez"
-                  onChange={(e) => setCustomerName(e.target.value)}
+                  // Números y signos no se pueden teclear ni pegar.
+                  onChange={(e) => {
+                    setCustomerName(sanitizePersonName(e.target.value));
+                    setErrors((er) => {
+                      const { customerName: _gone, ...rest } = er;
+                      void _gone;
+                      return rest;
+                    });
+                  }}
+                  // El aviso llega al salir del campo con el nombre a medias, no al teclear.
+                  onBlur={() => {
+                    const t = customerName.trim();
+                    if (t && (t.length < 2 || !isPersonName(t)))
+                      setErrors((er) => ({
+                        ...er,
+                        customerName: "El nombre debe tener al menos 2 letras (solo letras y espacios).",
+                      }));
+                  }}
                   disabled={busy}
+                  aria-invalid={!!errors.customerName}
                 />
               </Field>
               <Field
@@ -314,27 +340,42 @@ export function SaleDialog({
             )}
           </fieldset>
 
-          <Field
-            label="Atendió"
-            htmlFor="sale-staff"
-            error={errors.staffId}
-            hint={
-              itemsAreRestricted(options, cart.values)
-                ? "Solo los profesionales que dan este servicio u oferta."
-                : undefined
-            }
-          >
-            <SearchSelect
-              id="sale-staff"
-              value={staffId}
-              onChange={setStaffId}
-              options={staffChoices}
-              placeholder="Elige quién atendió…"
-              searchPlaceholder="Buscar profesional…"
-              disabled={busy}
-              invalid={!!errors.staffId}
-            />
-          </Field>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field
+              label="Atendió"
+              htmlFor="sale-staff"
+              error={errors.staffId}
+              hint={
+                itemsAreRestricted(options, cart.values)
+                  ? "Solo los profesionales que dan este servicio u oferta."
+                  : undefined
+              }
+            >
+              <SearchSelect
+                id="sale-staff"
+                value={staffId}
+                onChange={setStaffId}
+                options={staffChoices}
+                placeholder="Elige quién atendió…"
+                searchPlaceholder="Buscar profesional…"
+                disabled={busy}
+                invalid={!!errors.staffId}
+              />
+            </Field>
+            {/* Poner la venta en otro día es del dueño o administrador (la API también lo exige). */}
+            {canAdjustCommission && (
+              <Field label="Fecha de atención" htmlFor="sale-sold-on" error={errors.soldOn}>
+                <DatePicker
+                  id="sale-sold-on"
+                  value={soldOn}
+                  onChange={setSoldOn}
+                  disabled={busy}
+                  invalid={!!errors.soldOn}
+                  className="w-full"
+                />
+              </Field>
+            )}
+          </div>
 
           <SaleItemsField
             cart={cart}

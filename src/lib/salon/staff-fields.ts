@@ -5,7 +5,7 @@
 
 /** Celular peruano: exactamente 9 dígitos, con el prefijo +51 fijo. */
 export const STAFF_PHONE_DIGITS = 9;
-export const STAFF_PHONE_PREFIX = "+51";
+const STAFF_PHONE_PREFIX = "+51";
 
 /** Un nombre de persona: solo letras (con tildes y ñ) y espacios. */
 const NAME_ALLOWED = /^[\p{L}\p{M} ]+$/u;

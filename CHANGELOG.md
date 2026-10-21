@@ -11,6 +11,20 @@ imagen `ghcr.io/kevinrivm/vocero-crm:X.Y.Z`.
 - **Panel sin segundo scroll ni espacio vacío**: la tabla oculta para lectores de pantalla de los gráficos quedaba posicionada fuera del área con scroll y alargaba toda la página. El área de contenido ahora es `relative`, así que nada oculto puede ensanchar el documento (comprobado en Panel, Resultados, Caja, Clientes y Citas).
 - **Barra lateral**: en escritorio, si la ventana es baja y el menú no cabe, ahora se desplaza (antes lo cortaba y no se llegaba a Ajustes ni a cerrar sesión).
 
+### Auditoría de seguridad y limpieza
+
+- **Seguridad:** `POST /api/negocio/ventas` ya no deja que un miembro del equipo fije una comisión distinta ni
+  ponga la venta en otro día (solo dueño/administrador; 403). La pantalla oculta la fecha a un miembro.
+- **Limpieza:** se quitó código muerto del salón (secciones de reporte sin uso, `dateLabel`, `salesQuerySchema`)
+  y exports que nadie importaba; sin cambios de comportamiento.
+
+### Caja: nombre solo con letras y fecha de atención; Clientes: fecha al 50 %
+
+- **Caja:** «Nombre del cliente» solo admite letras y espacios (no se teclean números ni signos; el aviso sale
+  al salir del campo; también lo exige la API). Nuevo «Fecha de atención» junto a «Atendió», cada uno al 50 %:
+  hoy guarda «ahora»; otro día (pasado o futuro) lo guarda a ese día.
+- **Clientes → Nuevo cliente:** «Fecha de atención» ocupa el 50 % de la fila, igual que «Atendió».
+
 ### Cerrar sesión pide confirmación
 
 - El botón de la barra lateral abre «¿Seguro que quieres cerrar sesión?» (centrado, con X, Escape y clic fuera

@@ -174,7 +174,7 @@ export function MediaImageField({
  * sin salir del formulario: con el botón, arrastrando o pegando (Ctrl+V). Solo
  * imágenes, con los mismos límites de peso que Medios.
  */
-export function MediaPickerDialog({
+function MediaPickerDialog({
   selectedId,
   onPick,
   onClose,

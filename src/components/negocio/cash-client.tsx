@@ -379,6 +379,7 @@ export function CashClient({
         <SaleDialog
           currency={currency}
           canAdjustCommission
+          today={today}
           onClose={() => setSaleOpen(false)}
           onSaved={onSaved}
         />

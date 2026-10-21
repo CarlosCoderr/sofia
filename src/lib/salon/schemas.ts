@@ -18,7 +18,7 @@ import {
  */
 
 /** Tope de un monto: S/ 100 000. Una venta mayor es casi seguro un cero de más. */
-export const MAX_CENTS = 10_000_000;
+const MAX_CENTS = 10_000_000;
 
 /** Yape y Plin son un solo método: para la caja es lo mismo (dinero digital en el celular). */
 export const PAYMENT_METHODS = ["efectivo", "yape_plin", "tarjeta", "otro"] as const;
@@ -73,8 +73,8 @@ function optionalText(max: number) {
  * - `staffIds`: qué profesionales dan el servicio u oferta. `[]` = TODOS (el
  *   valor por defecto; quita cualquier restricción); ausente no lo toca.
  */
-export const MEDIA_ID = /^med_[a-z0-9]{20}$/;
-export const STAFF_ID = /^stf_[a-z0-9]{20}$/;
+const MEDIA_ID = /^med_[a-z0-9]{20}$/;
+const STAFF_ID = /^stf_[a-z0-9]{20}$/;
 
 const imageMediaId = z
   .string()
@@ -295,7 +295,7 @@ function checkBirthday(
 }
 
 /** Días de un mes en año bisiesto (el 29 de febrero es un cumpleaños válido). */
-export function daysInMonth(month: number): number {
+function daysInMonth(month: number): number {
   return new Date(Date.UTC(2000, month, 0)).getUTCDate();
 }
 
@@ -345,7 +345,12 @@ export const saleInputSchema = z
     /** Un contacto del CRM… */
     contactId: z.string().min(1).nullish(),
     /** …o un nombre suelto (cliente de mostrador). */
-    customerName: z.string().trim().max(80).nullish(),
+    customerName: z
+      .string()
+      .trim()
+      .max(80)
+      .refine((v) => v === "" || isPersonName(tidyPersonName(v)), "El nombre solo admite letras y espacios (sin números ni signos)")
+      .nullish(),
     /** Celular del cliente, en dígitos y con código de país. Opcional. */
     customerPhone: z
       .string()
@@ -520,11 +525,6 @@ export const saleDatePatchSchema = z.object({
     .regex(ISO_DATE, "Fecha no válida (AAAA-MM-DD)"),
 });
 export type SaleDatePatch = z.infer<typeof saleDatePatchSchema>;
-
-export const salesQuerySchema = z.object({
-  from: z.string().regex(ISO_DATE, "Fecha no válida (AAAA-MM-DD)").optional(),
-  to: z.string().regex(ISO_DATE, "Fecha no válida (AAAA-MM-DD)").optional(),
-});
 
 /* ------------------------------- agenda -------------------------------- */
 

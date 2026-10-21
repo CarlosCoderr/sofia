@@ -29,7 +29,7 @@ import {
  */
 
 /** Tope de la lista; más allá se afina con la búsqueda. */
-export const CLIENT_LIST_LIMIT = 1000;
+const CLIENT_LIST_LIMIT = 1000;
 
 const c = schema.contact;
 const sale = schema.serviceSale;

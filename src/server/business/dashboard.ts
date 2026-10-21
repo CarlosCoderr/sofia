@@ -20,7 +20,7 @@ import { getSalesReport } from "@/server/business/sales-service";
  */
 
 /** Clientes del salón que cumplen años en `month` (1-12). */
-export async function listBirthdaysOfMonth(
+async function listBirthdaysOfMonth(
   organizationId: string,
   month: number
 ): Promise<BirthdayClientDto[]> {
@@ -119,7 +119,7 @@ export function comparisonRange(period: ResolvedPeriod): {
  * él, cuántos suman 2 o más visitas (contando las anteriores y las del propio
  * periodo). Las ventas sin cliente (mostrador) no cuentan.
  */
-export async function getRetention(
+async function getRetention(
   organizationId: string,
   period: ResolvedPeriod,
   staffId?: string | null
@@ -160,7 +160,7 @@ export async function getRetention(
 }
 
 /** Ingresos en el tiempo, con los huecos en cero: por día, por semana o por mes. */
-export async function getRevenueSeries(
+async function getRevenueSeries(
   organizationId: string,
   period: ResolvedPeriod,
   staffId?: string | null

@@ -38,9 +38,9 @@ import { publish } from "@/server/events/bus";
  */
 
 /** Tope de filas de la tabla del reporte. Los totales cubren todo el periodo. */
-export const REPORT_ROW_LIMIT = 2000;
+const REPORT_ROW_LIMIT = 2000;
 /** Cuántos servicios y ofertas trae el ranking de demanda. */
-export const ITEM_RANKING_LIMIT = 50;
+const ITEM_RANKING_LIMIT = 50;
 
 type Tx = Parameters<Parameters<ReturnType<typeof getDb>["transaction"]>[0]>[0];
 type StaffRow = typeof schema.staff.$inferSelect;

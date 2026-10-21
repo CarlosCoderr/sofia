@@ -84,7 +84,7 @@ export function staffAfterItemsChange(
 }
 
 /** ¿Puede este profesional dar este ítem? (para validar antes de enviar) */
-export function staffMayGive(
+function staffMayGive(
   options: SaleOptionsDto | null,
   itemValue: string,
   staffId: string

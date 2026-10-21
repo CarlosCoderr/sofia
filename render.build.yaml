@@ -1,0 +1,73 @@
+# ============================================================
+# Blueprint de Render que CONSTRUYE desde TU repositorio (Dockerfile).
+#
+# El `render.yaml` de la raíz corre la imagen oficial publicada de Vocero: no
+# trae el módulo del salón ni tus cambios. Este archivo hace lo mismo pero
+# construye la imagen desde tu código. Se usa así:
+#   Render → New → Blueprint → tu repo → «Blueprint file path»: render.build.yaml
+#
+# Una app web (Docker), una base Postgres gestionada y un disco en /data (ahí
+# viven los archivos de Medios y el logo). El disco exige plan de pago.
+#
+# Queda a mano, una vez (el panel lo pide al crear el Blueprint):
+#   META_WEBHOOK_VERIFY_TOKEN → `openssl rand -hex 32` (no se genera solo porque
+#   es un segmento de la URL del webhook y el generador de Render trae «/»).
+# Después de desplegar: crear el primer usuario (ver DESPLIEGUE en el chat/README)
+# y, con dominio propio, cambiar APP_BASE_URL.
+# ============================================================
+services:
+  - type: web
+    name: crm-salon
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: starter
+    # La misma región que la base; no se cambia después.
+    # region: oregon   # ohio · virginia · frankfurt · singapore
+    healthCheckPath: /api/health
+    # Con un solo cliente, el despliegue es a mano («Manual Deploy») para que un
+    # push no cambie la producción sin que lo decidas.
+    autoDeploy: false
+    disk:
+      name: crm-data
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      # Render mete PORT=10000 por defecto; la imagen escucha en 3000.
+      - key: PORT
+        value: "3000"
+      - key: APP_BASE_URL
+        # La URL .onrender.com del propio servicio. Con dominio propio, cámbiala
+        # en el panel: el inicio de sesión solo acepta ese origen.
+        fromService:
+          type: web
+          name: crm-salon
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: DATABASE_URL
+        fromDatabase:
+          name: crm-db
+          property: connectionString
+      - key: BETTER_AUTH_SECRET
+        generateValue: true
+      - key: ENCRYPTION_KEY
+        # 256 bits en base64 (44 caracteres): los 32 bytes que exige src/lib/env.ts.
+        generateValue: true
+      - key: META_WEBHOOK_VERIFY_TOKEN
+        sync: false
+      - key: META_GRAPH_API_VERSION
+        value: v25.0
+      # Módulo del salón: Citas necesita la agenda encendida.
+      - key: SALON
+        value: "on"
+      - key: AGENDA
+        value: "on"
+
+databases:
+  - name: crm-db
+    databaseName: crm
+    user: crm
+    plan: basic-256mb
+    postgresMajorVersion: "16"
+    # region: oregon   # la misma que el servicio
+    # Solo la red privada de Render: sin esto, la base acepta cualquier IP.
+    ipAllowList: []

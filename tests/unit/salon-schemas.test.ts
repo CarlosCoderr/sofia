@@ -239,6 +239,16 @@ describe("venta", () => {
     expect(r.success && "contactId" in r.data).toBe(false);
   });
 
+  it("nombre del cliente de Caja: solo letras y espacios (vacío = mostrador)", () => {
+    const base = { staffId: "stf_1", serviceId: "srv_1", amountCents: 3000, paymentMethod: "efectivo" } as const;
+    for (const customerName of ["María Pérez", "  Ñandú   Núñez ", "", null, undefined]) {
+      expect(saleInputSchema.safeParse({ ...base, customerName }).success, String(customerName)).toBe(true);
+    }
+    for (const customerName of ["Ana2", "Ana-Luz", "J@vier", "123"]) {
+      expect(saleInputSchema.safeParse({ ...base, customerName }).success, customerName).toBe(false);
+    }
+  });
+
   it("celular y cumpleaños: dígitos con país; día y mes juntos y reales", () => {
     const base = { ...ok, customerName: "María" };
     expect(saleInputSchema.safeParse({ ...base, customerPhone: "51987654321" }).success).toBe(true);

@@ -362,6 +362,7 @@ export function BoardClient({
         <SaleDialog
           currency={currency}
           canAdjustCommission={canManage}
+          today={today}
           initial={{
             bookingId: chargeFor.id,
             contact: chargeFor.contact,

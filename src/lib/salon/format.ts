@@ -30,7 +30,7 @@ const LOCALE_BY_CURRENCY: Record<string, string> = {
   EUR: "es-ES",
 };
 
-export function moneyLocale(currency: string): string {
+function moneyLocale(currency: string): string {
   return LOCALE_BY_CURRENCY[currency] ?? "es-MX";
 }
 
@@ -82,20 +82,6 @@ export function dateTimeLabel(iso: string, timezone: string): string {
   }).formatToParts(d);
   const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
   return `${get("day")} ${get("month").replace(/\.$/, "")}, ${get("hour")}:${get("minute")}`;
-}
-
-/** Fecha (sin hora) de un instante EN LA ZONA DEL NEGOCIO: "17 oct 2026". */
-export function dateLabel(iso: string, timezone: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
-  return new Intl.DateTimeFormat("es-MX", {
-    timeZone: timezone,
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  })
-    .format(d)
-    .replace(/\./g, "");
 }
 
 export const MONTH_NAMES = [

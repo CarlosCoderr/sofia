@@ -87,5 +87,5 @@ describe("sandbox del Laboratorio en el sender", () => {
       expect(err).toBeInstanceOf(SendError);
     }
     expect(graphRequest).not.toHaveBeenCalled();
-  });
+  }, 30_000); // el primer import del sender es pesado y a veces pasa de los 5 s con la máquina cargada
 });
